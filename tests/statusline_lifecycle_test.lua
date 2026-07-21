@@ -1,6 +1,7 @@
 local callbacks = {}
 local panes = {}
 local next_pane_id = 2
+local close_commands = {}
 
 local function assert_equal(actual, expected, label)
   if actual ~= expected then
@@ -22,6 +23,8 @@ local wezterm = {
   url = {},
   version = "test",
   home_dir = "C:\\Users\\test",
+  executable_dir = "C:\\Program Files\\WezTerm",
+  fail_background_child = false,
 }
 
 function wezterm.on(name, callback)
@@ -45,8 +48,11 @@ end
 function wezterm.log_info() end
 function wezterm.log_error() end
 
-function wezterm.action.CloseCurrentPane()
-  return { kind = "close" }
+function wezterm.background_child_process(args)
+  if wezterm.fail_background_child then
+    error("simulated background child failure")
+  end
+  table.insert(close_commands, args)
 end
 
 function wezterm.action.ActivatePaneDirection(direction)
@@ -130,7 +136,6 @@ end
 
 local window = {
   font_size = 12,
-  fail_close = false,
 }
 
 function window:window_id()
@@ -146,12 +151,6 @@ function window:effective_config()
 end
 
 function window:perform_action(action, pane)
-  if action.kind == "close" then
-    if self.fail_close then
-      error("simulated close failure")
-    end
-    panes[pane:pane_id()] = nil
-  end
 end
 
 local function new_status_pane()
@@ -231,23 +230,60 @@ update(window, main)
 assert_equal(status.inject_count, before_zoom + 1, "font size forces repaint")
 
 status.dimensions.viewport_rows = 0
+wezterm.fail_background_child = true
 update(window, main)
-assert_equal(panes[status.id], nil, "invalid status pane closed")
+assert_equal(panes[status.id] ~= nil, true, "failed exact close retains status pane")
+assert_equal(#close_commands, 0, "failed exact close does not queue a command")
+
+wezterm.fail_background_child = false
+update(window, main)
+assert_equal(panes[status.id] ~= nil, true, "exact close remains asynchronous")
+assert_equal(#close_commands, 1, "invalid status pane queues one exact close")
+assert_equal(close_commands[1][2], "cli", "exact close uses wezterm cli")
+assert_equal(close_commands[1][3], "kill-pane", "exact close uses kill-pane")
+assert_equal(close_commands[1][4], "--pane-id", "exact close specifies pane id")
+assert_equal(close_commands[1][5], tostring(status.id), "exact close targets only status pane")
+
+update(window, main)
+assert_equal(#close_commands, 1, "pending close is not queued repeatedly")
+assert_equal(panes[main.id] ~= nil, true, "pending status close never removes main pane")
+
+panes[status.id] = nil
 update(window, main)
 status = panes[3]
 assert_equal(status ~= nil, true, "status pane recreated")
 assert_equal(status.dimensions.viewport_rows, 1, "recreated status pane rows")
 
 main.title = "pwsh.exe"
-window.fail_close = true
 update(window, main)
-assert_equal(panes[status.id] ~= nil, true, "failed close retains status pane")
-local tab_state = wezterm.GLOBAL.codex_statusline_state.tabs["7:99"]
-assert_equal(tab_state.status_pane_id, status.id, "failed close retains status pane id")
+assert_equal(panes[status.id] ~= nil, true, "MCP title change keeps status pane while Codex process is live")
+assert_equal(#close_commands, 1, "MCP title change does not request pane close")
 
-window.fail_close = false
+function main:get_user_vars()
+  return { codex_active = "false" }
+end
+
 update(window, main)
-assert_equal(panes[status.id], nil, "status pane closes after retry")
+assert_equal(panes[status.id] ~= nil, true, "inactive status close remains asynchronous")
+assert_equal(#close_commands, 2, "confirmed inactive session queues exact close")
+assert_equal(close_commands[2][5], tostring(status.id), "inactive close targets status pane")
+local tab_state = wezterm.GLOBAL.codex_statusline_state.tabs["7:99"]
+assert_equal(tab_state.status_pane_id, status.id, "pending close retains status pane id")
+
+update(window, main)
+assert_equal(#close_commands, 2, "inactive close is not queued repeatedly")
+assert_equal(panes[main.id] ~= nil, true, "inactive cleanup never removes main pane")
+
+panes[status.id] = nil
+update(window, main)
+assert_equal(panes[status.id], nil, "status pane closes after asynchronous completion")
 assert_equal(tab_state.status_pane_id, nil, "status pane id clears after confirmed close")
+
+tab_state.status_pane_id = main.id
+tab_state.main_pane_id = main.id
+update(window, main)
+assert_equal(#close_commands, 2, "main pane id is never passed to kill-pane")
+assert_equal(panes[main.id] ~= nil, true, "main pane survives corrupted status state")
+assert_equal(tab_state.status_pane_id, nil, "corrupted status reference is discarded")
 
 print("statusline lifecycle tests passed")

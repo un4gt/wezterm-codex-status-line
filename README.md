@@ -133,7 +133,9 @@ Unix bridge handler 会引用当前脚本路径。移动或删除 clone 目录�
 codex | max | app
 ```
 
-Lua 每次 `update-status` 读取主 pane 标题。title 中的 reasoning effort 优先于 rollout 中上一轮的 `turn_context`，因此 Shift+Tab 切换 Default/Plan 模式后无需提交消息即可更新。Codex 退出时会清空自己管理的标题；一旦当前会话出现过该信号，标题消失就优先于可能滞后的 Windows 进程快照。
+Lua 每次 `update-status` 读取主 pane 标题。title 中的 reasoning effort 优先于 rollout 中上一轮的 `turn_context`，因此 Shift+Tab 切换 Default/Plan 模式后无需提交消息即可更新。MCP 子进程可能临时改变 Windows 控制台标题；只要进程树仍明确找到 Codex，就不会把该变化误判为退出。标题消失且进程树确认 Codex 已退出后，才会结束当前状态。
+
+状态 pane 的回收通过 `wezterm cli kill-pane --pane-id <id>` 定向异步执行，不使用可能作用于当前活动 pane 的 `CloseCurrentPane`。相同 pane 的待处理关闭请求会去重；无法安全发起定向关闭时宁可暂时保留状态 pane，也不会关闭 Codex 主 pane。
 
 未启用该开关时仍使用进程树检测，但 `/exit` 的关闭速度取决于系统进程信息何时刷新。
 

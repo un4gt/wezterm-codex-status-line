@@ -378,7 +378,7 @@ function M.update_title_bridge_state(current, signal, title_read_ok, process_sta
     return state, false, "terminal-title-ended"
   end
 
-  if title_read_ok and state.seen then
+  if title_read_ok and state.seen and process_state == false then
     state.ended = true
     state.reasoning = nil
     return state, false, "terminal-title-ended"

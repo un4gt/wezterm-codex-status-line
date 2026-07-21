@@ -142,8 +142,13 @@ do
   assert_equal(state.reasoning, "max", "managed title stores reasoning")
 
   state, override, source = core.update_title_bridge_state(state, nil, true, true)
-  assert_equal(override, false, "missing managed title ends session")
-  assert_equal(source, "terminal-title-ended", "missing title source")
+  assert_equal(override, nil, "live Codex process survives transient title loss")
+  assert_equal(source, nil, "transient title loss has no terminal override")
+  assert_equal(state.ended, false, "transient title loss keeps title generation active")
+
+  state, override = core.update_title_bridge_state(state, nil, true, false)
+  assert_equal(override, false, "confirmed process exit ends title session")
+  assert_equal(state.ended, true, "confirmed process exit marks title generation ended")
 
   state, override = core.update_title_bridge_state(state, nil, false, true)
   assert_equal(override, false, "stale process cannot reactivate ended title session")

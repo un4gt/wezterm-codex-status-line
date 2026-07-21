@@ -4,7 +4,7 @@ local core = require("codex_statusline_core")
 local M = {}
 
 -- Bump this when you want to confirm which copy of the file is loaded.
-local MODULE_ID = "wezterm-codex-statusline/2026-07-20"
+local MODULE_ID = "wezterm-codex-statusline/2026-07-21.1"
 
 local FORMAT_RESET_ITEM = nil
 
@@ -52,7 +52,7 @@ local SESSION_INDEX_CACHE = {
 local GIT_BRANCH_CACHE = {}
 
 local GLOBAL_KEY = "codex_statusline_state"
-local STATE_SCHEMA = 4
+local STATE_SCHEMA = 5
 local existing_state = wezterm.GLOBAL[GLOBAL_KEY]
 if type(existing_state) ~= "table" then
   existing_state = { tabs = {}, panes = {} }
@@ -935,6 +935,9 @@ local function clear_parsed_rollout_data(opts, pane_state)
 end
 
 local function retire_bridge_generation(opts, pane, pane_state)
+  if not opts.sessions or not opts.sessions.enabled then
+    return
+  end
   if not pane_state then
     return
   end
@@ -1540,6 +1543,9 @@ function M.setup(user_opts)
   if type(state.panes) ~= "table" then
     state.panes = {}
   end
+  if type(state.pane_close_requests) ~= "table" then
+    state.pane_close_requests = {}
+  end
 
   local function reset_status_render_state(tab_state)
     tab_state.last_render_frame = nil
@@ -1551,10 +1557,14 @@ function M.setup(user_opts)
   end
 
   local function clear_status_pane_reference(tab_state)
+    local pane_id = tab_state.status_pane_id
     tab_state.status_pane_id = nil
     tab_state.status_rows = nil
     tab_state.status_close_requested = nil
     tab_state.status_close_reason = nil
+    if pane_id ~= nil then
+      state.pane_close_requests[id_key(pane_id)] = nil
+    end
     reset_status_render_state(tab_state)
   end
 
@@ -1570,6 +1580,46 @@ function M.setup(user_opts)
   end
 
   local close_status_pane
+
+  local function request_exact_pane_close(pane_id)
+    local pane_key = id_key(pane_id)
+    if not pane_key then
+      return false
+    end
+
+    local now = os.time()
+    local previous = tonumber(state.pane_close_requests[pane_key])
+    if previous and (now - previous) < 2 then
+      return true
+    end
+    if type(wezterm.background_child_process) ~= "function" then
+      wezterm.log_error(
+        "codex_statusline: cannot close status pane safely; background_child_process unavailable"
+      )
+      return false
+    end
+
+    local executable = is_windows() and "wezterm.exe" or "wezterm"
+    local executable_dir = trim(wezterm.executable_dir)
+    if executable_dir then
+      executable = path_join({ executable_dir, executable })
+    end
+    local ok, err = pcall(wezterm.background_child_process, {
+      executable,
+      "cli",
+      "kill-pane",
+      "--pane-id",
+      pane_key,
+    })
+    if not ok then
+      wezterm.log_error(
+        "codex_statusline: failed to request exact pane close id=" .. pane_key .. ": " .. tostring(err)
+      )
+      return false
+    end
+    state.pane_close_requests[pane_key] = now
+    return true
+  end
 
   local function ensure_status_pane(window, pane, tab_id, tab_state)
     if not opts.bottom_pane.enabled then
@@ -1710,43 +1760,30 @@ function M.setup(user_opts)
       return true
     end
 
-    tab_state.status_close_requested = true
-    tab_state.status_close_reason = reason or tab_state.status_close_reason or "inactive"
-    if window and window.perform_action then
-      if opts.debug then
-        wezterm.log_info(
-          "codex_statusline: closing status pane id="
-            .. tostring(status_pane_id)
-            .. " w="
-            .. tostring(window_id_key(window) or "?")
-            .. " tab_id="
-            .. tostring(tab_id)
-            .. " reason="
-            .. tostring(tab_state.status_close_reason)
-        )
-      end
-      local ok_close, err = pcall(
-        window.perform_action,
-        window,
-        wezterm.action.CloseCurrentPane({ confirm = false }),
-        status_pane
+    if tab_state.main_pane_id and id_key(tab_state.main_pane_id) == id_key(status_pane_id) then
+      wezterm.log_error(
+        "codex_statusline: refusing to close pane because status id matches main pane id="
+          .. tostring(status_pane_id)
       )
-      if not ok_close then
-        if opts.debug then
-          wezterm.log_info("codex_statusline: status pane close failed: " .. tostring(err))
-        end
-        return false
-      end
-    else
+      clear_status_pane_reference(tab_state)
       return false
     end
 
-    local ok_after, remaining = pcall(wezterm.mux.get_pane, status_pane_id)
-    if ok_after and not remaining then
-      clear_status_pane_reference(tab_state)
-      return true
+    tab_state.status_close_requested = true
+    tab_state.status_close_reason = reason or tab_state.status_close_reason or "inactive"
+    if opts.debug then
+      wezterm.log_info(
+        "codex_statusline: requesting exact status pane close id="
+          .. tostring(status_pane_id)
+          .. " w="
+          .. tostring(window_id_key(window) or "?")
+          .. " tab_id="
+          .. tostring(tab_id)
+          .. " reason="
+          .. tostring(tab_state.status_close_reason)
+      )
     end
-    return false
+    return request_exact_pane_close(status_pane_id)
   end
 
   local function format_int(n)
@@ -2408,7 +2445,7 @@ function M.setup(user_opts)
               -- Close any extra status panes.
               for i = 2, #status_infos do
                 local extra = status_infos[i]
-                if extra and extra.pane and window and window.perform_action then
+                if extra and extra.pane and extra.pane.pane_id then
                   if opts.debug and extra.pane.pane_id then
                     wezterm.log_info(
                       "codex_statusline: closing extra status pane"
@@ -2418,7 +2455,7 @@ function M.setup(user_opts)
                         .. tostring(extra.top)
                     )
                   end
-                  pcall(window.perform_action, window, wezterm.action.CloseCurrentPane({ confirm = false }), extra.pane)
+                  request_exact_pane_close(extra.pane:pane_id())
                 end
               end
             end
