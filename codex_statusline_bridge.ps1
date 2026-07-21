@@ -206,7 +206,18 @@ function Uninstall-Bridge {
 
   $manifestPath = Join-Path (Join-Path $homePath 'wezterm-statusline') 'bridge.json'
   if (Test-Path -LiteralPath $manifestPath) {
-    Remove-Item -LiteralPath $manifestPath -Force
+    $preserveManifest = $false
+    try {
+      $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
+      $preserveManifest = [int]$manifest.schema -ge 3 -and (
+        $manifest.PSObject.Properties.Name -contains 'codex_title_bridge'
+      )
+    } catch {}
+    if ($preserveManifest) {
+      Write-Warning 'Terminal title restore metadata was preserved. Run install.ps1 -Uninstall for a complete uninstall.'
+    } else {
+      Remove-Item -LiteralPath $manifestPath -Force
+    }
   }
   Write-Host 'Codex statusline bridge uninstalled.'
 }

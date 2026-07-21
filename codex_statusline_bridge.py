@@ -161,10 +161,27 @@ def uninstall(home: Path) -> None:
             write_json_atomic(hooks_path, document)
 
     manifest = home / "wezterm-statusline" / "bridge.json"
+    preserve_manifest = False
     try:
-        manifest.unlink()
-    except FileNotFoundError:
-        pass
+        value = json.loads(manifest.read_text(encoding="utf-8-sig"))
+        preserve_manifest = (
+            isinstance(value, dict)
+            and int(value.get("schema", 0)) >= 3
+            and isinstance(value.get("codex_title_bridge"), dict)
+        )
+    except (FileNotFoundError, OSError, ValueError, TypeError):
+        preserve_manifest = False
+    if preserve_manifest:
+        print(
+            "Terminal title restore metadata was preserved. "
+            "Run install.ps1 -Uninstall for a complete uninstall.",
+            file=sys.stderr,
+        )
+    else:
+        try:
+            manifest.unlink()
+        except FileNotFoundError:
+            pass
     print("Codex statusline bridge uninstalled.")
 
 

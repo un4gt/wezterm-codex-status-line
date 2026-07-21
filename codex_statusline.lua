@@ -49,8 +49,10 @@ local SESSION_INDEX_CACHE = {
   by_path = nil,
 }
 
+local GIT_BRANCH_CACHE = {}
+
 local GLOBAL_KEY = "codex_statusline_state"
-local STATE_SCHEMA = 2
+local STATE_SCHEMA = 4
 local existing_state = wezterm.GLOBAL[GLOBAL_KEY]
 if type(existing_state) ~= "table" then
   existing_state = { tabs = {}, panes = {} }
@@ -186,16 +188,7 @@ local function is_windows()
 end
 
 local function normalize_path(path)
-  local p = trim(path)
-  if not p then
-    return nil
-  end
-  if is_windows() then
-    p = p:gsub("/", "\\")
-    p = p:lower()
-  end
-  p = p:gsub("[\\/]+$", "")
-  return p
+  return core.normalize_path(path, is_windows())
 end
 
 local function path_join(parts)
@@ -757,6 +750,12 @@ local function detect_bridge_rollout(opts, pane, pane_state)
     return nil, "mapping-generation-retired", mapping
   end
 
+  local mapping_cwd = normalize_path(mapping.cwd)
+  local pane_cwd = pane_state and (pane_state.codex_cwd_norm or pane_state.pane_cwd_norm) or nil
+  if mapping_cwd and pane_cwd and mapping_cwd ~= pane_cwd then
+    return nil, "mapping-cwd-mismatch", mapping
+  end
+
   local codex_home = codex_home_for_opts(opts)
   if mapping.rollout_path then
     if not codex_home or not path_is_within(mapping.rollout_path, codex_home) then
@@ -956,9 +955,17 @@ local function assign_rollout(opts, pane_state, path, source, mapping, meta)
   pane_state.rollout_path = path
   pane_state.rollout_source = source
   pane_state.bridge_mapping = mapping
-  pane_state.session_meta = meta or (path and read_session_meta(path, opts.sessions.max_meta_lines) or nil)
-  if pane_state.session_meta then
-    pane_state.model_context_window = to_number(pane_state.session_meta.context_window)
+
+  local resolved_meta = meta
+  if not resolved_meta and (changed or not pane_state.session_meta) and path then
+    resolved_meta = read_session_meta(path, opts.sessions.max_meta_lines)
+  end
+  if resolved_meta then
+    pane_state.session_meta = resolved_meta
+    pane_state.model_context_window = core.merge_context_window(
+      pane_state.model_context_window,
+      resolved_meta.context_window
+    )
   end
   return changed
 end
@@ -1128,7 +1135,10 @@ local function update_rollout_state(opts, pane, pane_state)
         if usage_info.last then
           pane_state.token_usage_last = usage_info.last
         end
-        pane_state.model_context_window = usage_info.model_context_window or pane_state.model_context_window
+        pane_state.model_context_window = core.merge_context_window(
+          pane_state.model_context_window,
+          usage_info.model_context_window
+        )
         if opts.debug and usage_info.total then
           wezterm.log_info(
             "codex_statusline: token_count updated total_tokens=" .. tostring(usage_info.total.total_tokens)
@@ -1195,6 +1205,14 @@ local DEFAULTS = {
   codex_config = {
     enabled = true,
     path = nil,
+    cache_ttl_seconds = 5,
+  },
+  title_bridge = {
+    enabled = true,
+    app_name = "codex",
+  },
+  git = {
+    enabled = true,
     cache_ttl_seconds = 5,
   },
   codex_home = nil, -- defaults to $CODEX_HOME or ~/.codex
@@ -1265,6 +1283,48 @@ local DEFAULTS = {
   },
 }
 
+local function git_branch_for_cwd(opts, cwd, fallback)
+  local fallback_branch = trim(fallback)
+  if not opts.git or not opts.git.enabled or not wezterm.run_child_process then
+    return fallback_branch
+  end
+
+  local normalized_cwd = normalize_path(cwd)
+  if not normalized_cwd then
+    return fallback_branch
+  end
+
+  local ttl = tonumber(opts.git.cache_ttl_seconds) or 5
+  ttl = math.max(0, ttl)
+  local now = os.time()
+  local cached = GIT_BRANCH_CACHE[normalized_cwd]
+  if cached and (now - cached.at) < ttl then
+    if cached.resolved then
+      return cached.branch
+    end
+    return fallback_branch
+  end
+
+  local ok, success, stdout = pcall(wezterm.run_child_process, {
+    "git",
+    "-C",
+    normalized_cwd,
+    "branch",
+    "--show-current",
+  })
+  local resolved = ok and success == true
+  local branch = resolved and trim(stdout) or nil
+  GIT_BRANCH_CACHE[normalized_cwd] = {
+    at = now,
+    resolved = resolved,
+    branch = branch,
+  }
+  if resolved then
+    return branch
+  end
+  return fallback_branch
+end
+
 local function foreground_process_path(pane)
   if not pane or not pane.get_foreground_process_name then
     return nil
@@ -1329,6 +1389,18 @@ local function codex_process_tree_result(pane, pane_state, opts)
   return result
 end
 
+local function codex_terminal_title_signal(opts, pane)
+  if not opts.title_bridge or not opts.title_bridge.enabled or not pane or not pane.get_title then
+    return nil, false, nil
+  end
+
+  local ok, title = pcall(pane.get_title, pane)
+  if not ok then
+    return nil, false, nil
+  end
+  return core.parse_codex_terminal_title(title, opts.title_bridge.app_name), true, title
+end
+
 local function build_codex_cells(opts, pane, pane_state)
   local user_vars = {}
   if pane.get_user_vars then
@@ -1342,6 +1414,7 @@ local function build_codex_cells(opts, pane, pane_state)
   local tree_result = codex_process_tree_result(pane, pane_state, opts)
   local tree_state = tree_result and tree_result.state or nil
   local process_is_codex = tree_state == true and tree_result.pid == tree_result.foreground_pid
+  local title_signal, title_read_ok, terminal_title = codex_terminal_title_signal(opts, pane)
 
   local model = first_user_var(user_vars, opts.user_vars.model)
   local thinking = first_user_var(user_vars, opts.user_vars.thinking)
@@ -1358,14 +1431,14 @@ local function build_codex_cells(opts, pane, pane_state)
       pane_state.codex_confirmed = false
       pane_state.shell_since = nil
       pane_state.codex_cwd_norm = nil
+      pane_state.title_bridge = nil
     end
     return { active = false }
   end
 
-  if (tree_state == true or active_var == true) and pane_state then
+  local process_seen = tree_state == true or active_var == true
+  if process_seen and pane_state then
     pane_state.last_codex_seen_at = now
-    pane_state.codex_confirmed = true
-    pane_state.shell_since = nil
   end
 
   local recently_seen = false
@@ -1377,11 +1450,33 @@ local function build_codex_cells(opts, pane, pane_state)
   local allow_recent = (tree_state == nil) and recently_seen
   if tree_state == true or active_var == true or allow_recent then
     active = true
-    if pane_state and allow_recent and (not pane_state.codex_confirmed) then
-      pane_state.codex_confirmed = true
+  end
+
+  local title_bridge_source = nil
+  if pane_state then
+    local title_override = nil
+    pane_state.title_bridge, title_override, title_bridge_source = core.update_title_bridge_state(
+      pane_state.title_bridge,
+      title_signal,
+      title_read_ok,
+      tree_state
+    )
+    if title_override ~= nil then
+      active = title_override
     end
-  else
-    if pane_state then
+  elseif title_signal then
+    active = true
+    title_bridge_source = "terminal-title"
+  end
+
+  if pane_state then
+    if active then
+      if process_seen or title_signal then
+        pane_state.last_codex_seen_at = now
+      end
+      pane_state.codex_confirmed = true
+      pane_state.shell_since = nil
+    else
       pane_state.codex_confirmed = false
       pane_state.last_codex_seen_at = nil
       pane_state.shell_since = nil
@@ -1402,6 +1497,7 @@ local function build_codex_cells(opts, pane, pane_state)
     active = active,
     model = model,
     thinking = thinking,
+    live_reasoning = title_signal and title_signal.reasoning or nil,
     provider = provider,
     process_is_codex = process_is_codex,
     tree_state = tree_state,
@@ -1409,6 +1505,8 @@ local function build_codex_cells(opts, pane, pane_state)
     codex_pid = tree_result and tree_result.pid or nil,
     process_kind = tree_result and tree_result.kind or nil,
     foreground_pid = tree_result and tree_result.foreground_pid or nil,
+    title_bridge_source = title_bridge_source,
+    terminal_title = terminal_title,
   }
 end
 
@@ -1443,6 +1541,36 @@ function M.setup(user_opts)
     state.panes = {}
   end
 
+  local function reset_status_render_state(tab_state)
+    tab_state.last_render_frame = nil
+    tab_state.last_render_layout = nil
+    tab_state.last_render_ok = false
+    tab_state._warned_inject_output = nil
+    tab_state._warned_inject_error = nil
+    tab_state._rendered_once = nil
+  end
+
+  local function clear_status_pane_reference(tab_state)
+    tab_state.status_pane_id = nil
+    tab_state.status_rows = nil
+    tab_state.status_close_requested = nil
+    tab_state.status_close_reason = nil
+    reset_status_render_state(tab_state)
+  end
+
+  local function pane_dimensions(pane)
+    if not pane or not pane.get_dimensions then
+      return nil
+    end
+    local ok, dims = pcall(pane.get_dimensions, pane)
+    if not ok or type(dims) ~= "table" then
+      return nil
+    end
+    return dims
+  end
+
+  local close_status_pane
+
   local function ensure_status_pane(window, pane, tab_id, tab_state)
     if not opts.bottom_pane.enabled then
       return nil
@@ -1452,16 +1580,26 @@ function M.setup(user_opts)
 
     if tab_state and tab_state.status_pane_id then
       local ok_existing, existing = pcall(wezterm.mux.get_pane, tab_state.status_pane_id)
-      if ok_existing and existing then
-        local existing_rows = nil
-        if existing.get_dimensions then
-          local ok_dims, dims = pcall(existing.get_dimensions, existing)
-          if ok_dims and dims then
-            existing_rows = dims.viewport_rows or dims.rows
-          end
+      if not ok_existing then
+        if opts.debug then
+          wezterm.log_info(
+            "codex_statusline: unable to verify status pane id=" .. tostring(tab_state.status_pane_id)
+          )
         end
-        local recorded_rows = tonumber(tab_state.status_rows)
-        if recorded_rows == desired_rows or (recorded_rows == nil and existing_rows == desired_rows) then
+        return nil
+      end
+
+      if not existing then
+        clear_status_pane_reference(tab_state)
+      else
+        if tab_state.status_close_requested then
+          close_status_pane(window, tab_id, tab_state, tab_state.status_close_reason)
+          return nil
+        end
+
+        local dims = pane_dimensions(existing)
+        local existing_rows = dims and tonumber(dims.viewport_rows or dims.rows) or nil
+        if existing_rows == desired_rows then
           tab_state.status_rows = desired_rows
           return existing
         end
@@ -1472,23 +1610,13 @@ function M.setup(user_opts)
               .. " pane_id="
               .. tostring(tab_state.status_pane_id)
               .. " rows="
-              .. tostring(existing_rows or recorded_rows)
+              .. tostring(existing_rows)
               .. "->"
               .. tostring(desired_rows)
           )
         end
-        if window and window.perform_action then
-          pcall(window.perform_action, window, wezterm.action.CloseCurrentPane({ confirm = false }), existing)
-        end
-        tab_state.status_pane_id = nil
-        tab_state.status_rows = nil
-      end
-      if opts.debug then
-        wezterm.log_info(
-          "codex_statusline: status pane id is stale; recreating"
-            .. " pane_id="
-            .. tostring(tab_state.status_pane_id)
-        )
+        close_status_pane(window, tab_id, tab_state, "recreate")
+        return nil
       end
     end
 
@@ -1518,8 +1646,8 @@ function M.setup(user_opts)
     end
 
     if opts.debug then
-      local status_dims = status_pane.get_dimensions and status_pane:get_dimensions() or nil
-      local main_dims = pane.get_dimensions and pane:get_dimensions() or nil
+      local status_dims = pane_dimensions(status_pane)
+      local main_dims = pane_dimensions(pane)
       local status_rows = status_dims and (status_dims.viewport_rows or status_dims.rows) or "?"
       local main_rows = main_dims and (main_dims.viewport_rows or main_dims.rows) or "?"
       local wid = window_id_key(window) or "?"
@@ -1551,10 +1679,9 @@ function M.setup(user_opts)
     state.tabs[tab_key].status_pane_id = status_pane:pane_id()
     state.tabs[tab_key].status_rows = desired_rows
     state.tabs[tab_key].main_pane_id = pane:pane_id()
-    state.tabs[tab_key].last_render_frame = nil
-    state.tabs[tab_key].last_render_ok = false
-    state.tabs[tab_key]._warned_inject_output = nil
-    state.tabs[tab_key]._warned_inject_error = nil
+    state.tabs[tab_key].status_close_requested = nil
+    state.tabs[tab_key].status_close_reason = nil
+    reset_status_render_state(state.tabs[tab_key])
 
     -- Keep focus in the main pane (WezTerm tends to focus the newly split pane).
     if opts.bottom_pane.prevent_focus then
@@ -1568,27 +1695,58 @@ function M.setup(user_opts)
     return status_pane
   end
 
-  local function close_status_pane(window, tab_id, tab_state)
+  close_status_pane = function(window, tab_id, tab_state, reason)
     if not tab_state or not tab_state.status_pane_id then
-      return
+      return true
     end
 
-    local ok_pane, status_pane = pcall(wezterm.mux.get_pane, tab_state.status_pane_id)
-    if ok_pane and status_pane then
+    local status_pane_id = tab_state.status_pane_id
+    local ok_pane, status_pane = pcall(wezterm.mux.get_pane, status_pane_id)
+    if not ok_pane then
+      return false
+    end
+    if not status_pane then
+      clear_status_pane_reference(tab_state)
+      return true
+    end
+
+    tab_state.status_close_requested = true
+    tab_state.status_close_reason = reason or tab_state.status_close_reason or "inactive"
+    if window and window.perform_action then
       if opts.debug then
         wezterm.log_info(
           "codex_statusline: closing status pane id="
-            .. tostring(tab_state.status_pane_id)
+            .. tostring(status_pane_id)
             .. " w="
             .. tostring(window_id_key(window) or "?")
             .. " tab_id="
             .. tostring(tab_id)
+            .. " reason="
+            .. tostring(tab_state.status_close_reason)
         )
       end
-      window:perform_action(wezterm.action.CloseCurrentPane({ confirm = false }), status_pane)
+      local ok_close, err = pcall(
+        window.perform_action,
+        window,
+        wezterm.action.CloseCurrentPane({ confirm = false }),
+        status_pane
+      )
+      if not ok_close then
+        if opts.debug then
+          wezterm.log_info("codex_statusline: status pane close failed: " .. tostring(err))
+        end
+        return false
+      end
+    else
+      return false
     end
 
-    state.tabs[tab_state_key(window, tab_id)] = nil
+    local ok_after, remaining = pcall(wezterm.mux.get_pane, status_pane_id)
+    if ok_after and not remaining then
+      clear_status_pane_reference(tab_state)
+      return true
+    end
+    return false
   end
 
   local function format_int(n)
@@ -1760,16 +1918,18 @@ function M.setup(user_opts)
     local turn_context = pane_state and pane_state.turn_context or nil
     local model = turn_context and trim(turn_context.model) or nil
     model = model or trim(codex_info.model)
-    local thinking = turn_context and trim(turn_context.effort or turn_context.model_reasoning_effort) or nil
+    local thinking = trim(codex_info.live_reasoning)
+    thinking = thinking or (turn_context and trim(turn_context.effort or turn_context.model_reasoning_effort) or nil)
     thinking = thinking or trim(codex_info.thinking)
     local provider = meta and trim(meta.model_provider) or nil
     provider = provider or trim(codex_info.provider)
     local cwd = meta and trim(meta.cwd) or nil
     cwd = cwd or (pane_state and trim(pane_state.pane_cwd) or nil)
-    local git_branch = nil
+    local metadata_git_branch = nil
     if meta and type(meta.git) == "table" then
-      git_branch = trim(meta.git.branch)
+      metadata_git_branch = trim(meta.git.branch)
     end
+    local git_branch = git_branch_for_cwd(opts, cwd, metadata_git_branch)
 
     local layout = "wide"
     if cols < 60 then
@@ -1970,8 +2130,13 @@ function M.setup(user_opts)
       end
       table.insert(usage_candidates, table.concat(minimal, " "))
     else
-      long_usage_text = "Token usage: (waiting for data…)"
-      usage_candidates = { "tokens: waiting", "waiting" }
+      local waiting = core.waiting_status(
+        pane_state and pane_state.rollout_path or nil,
+        pane_state and pane_state.rollout_source or nil,
+        pane_state and pane_state.bridge_wait_reason or nil
+      )
+      long_usage_text = waiting.long
+      usage_candidates = { waiting.short, waiting.minimal }
     end
 
     local function render_segments(items)
@@ -2064,12 +2229,20 @@ function M.setup(user_opts)
     return line1, line2
   end
 
-  local function repaint_status_pane(status_pane, tab_state, line1, line2)
-    local dims = status_pane:get_dimensions()
-    local cols = (dims and dims.cols and dims.cols > 0) and dims.cols or 80
-    local rows = (dims and (dims.viewport_rows or dims.rows)) or 2
-    if rows < 1 then
-      rows = 2
+  local function repaint_status_pane(window, status_pane, tab_state, line1, line2)
+    local dims = pane_dimensions(status_pane)
+    local cols = dims and tonumber(dims.cols) or nil
+    local rows = dims and tonumber(dims.viewport_rows or dims.rows) or nil
+    if not cols or cols < 1 or not rows or rows < 1 then
+      return false
+    end
+
+    local font_size = nil
+    if window and window.effective_config then
+      local ok_config, config = pcall(window.effective_config, window)
+      if ok_config and type(config) == "table" then
+        font_size = config.font_size
+      end
     end
 
     local payload = nil
@@ -2082,9 +2255,14 @@ function M.setup(user_opts)
       payload = string.format("\x1b[%d;1H", start_row) .. line1 .. "\x1b[K\r\n" .. line2 .. "\x1b[K"
     end
     local frame = "\x1b[?25l\x1b[H\x1b[2J" .. payload
+    local layout_key = core.render_layout_key(status_pane:pane_id(), cols, rows, font_size)
 
-    if tab_state.last_render_ok and tab_state.last_render_frame == frame then
-      return
+    if
+      tab_state.last_render_ok
+      and tab_state.last_render_frame == frame
+      and tab_state.last_render_layout == layout_key
+    then
+      return true
     end
 
     if not status_pane.inject_output then
@@ -2103,12 +2281,13 @@ function M.setup(user_opts)
             .. tostring(domain)
         )
       end
-      return
+      return false
     end
 
     local ok, err = pcall(status_pane.inject_output, status_pane, frame)
     if ok then
       tab_state.last_render_frame = frame
+      tab_state.last_render_layout = layout_key
       tab_state.last_render_ok = true
       if opts.debug and not tab_state._rendered_once then
         tab_state._rendered_once = true
@@ -2122,7 +2301,7 @@ function M.setup(user_opts)
             .. tostring(rows)
         )
       end
-      return
+      return true
     end
 
     tab_state.last_render_ok = false
@@ -2140,6 +2319,7 @@ function M.setup(user_opts)
           .. tostring(err)
       )
     end
+    return false
   end
 
   local function handle_update(window, active_pane)
@@ -2164,6 +2344,13 @@ function M.setup(user_opts)
     local tab_key = tab_state_key(window, tab_id)
     state.tabs[tab_key] = state.tabs[tab_key] or {}
     local tab_state = state.tabs[tab_key]
+
+    if tab_state.status_pane_id then
+      local ok_known, known = pcall(wezterm.mux.get_pane, tab_state.status_pane_id)
+      if ok_known and not known then
+        clear_status_pane_reference(tab_state)
+      end
+    end
 
     -- If we lost state (or have duplicates), reconcile by scanning panes for a
     -- pane titled "codex-statusline". Keep only the bottom-most one.
@@ -2199,6 +2386,9 @@ function M.setup(user_opts)
           local keep = status_infos[1]
           local keep_id = keep and keep.pane and keep.pane.pane_id and keep.pane:pane_id() or nil
           if keep_id then
+            if tab_state.status_pane_id ~= keep_id then
+              reset_status_render_state(tab_state)
+            end
             tab_state.status_pane_id = keep_id
             if (tonumber(keep.top) or 0) ~= max_top then
               -- Status pane drifted away from the bottom; close it so we can
@@ -2213,10 +2403,7 @@ function M.setup(user_opts)
                     .. tostring(max_top)
                 )
               end
-              tab_state.status_pane_id = nil
-              if window and window.perform_action then
-                pcall(window.perform_action, window, wezterm.action.CloseCurrentPane({ confirm = false }), keep.pane)
-              end
+              close_status_pane(window, tab_id, tab_state, "recreate")
             else
               -- Close any extra status panes.
               for i = 2, #status_infos do
@@ -2338,6 +2525,8 @@ function M.setup(user_opts)
         tostring(codex_info and codex_info.codex_pid),
         tostring(codex_info and codex_info.process_kind),
         tostring(codex_info and codex_info.tree_reason),
+        tostring(codex_info and codex_info.title_bridge_source),
+        tostring(codex_info and codex_info.live_reasoning),
         tostring(pane_state and pane_state.codex_confirmed),
         tostring(pane_state and pane_state.pane_cwd),
       }, "|")
@@ -2363,6 +2552,10 @@ function M.setup(user_opts)
             .. tostring(codex_info and codex_info.process_kind)
             .. " reason="
             .. tostring(codex_info and codex_info.tree_reason)
+            .. " title_bridge="
+            .. tostring(codex_info and codex_info.title_bridge_source)
+            .. " live_reasoning="
+            .. tostring(codex_info and codex_info.live_reasoning)
             .. " confirmed="
             .. tostring(pane_state and pane_state.codex_confirmed)
             .. " cwd="
@@ -2373,26 +2566,32 @@ function M.setup(user_opts)
 
     local now = os.time()
     if not codex_info or not codex_info.active then
-      if pane_state._codex_active or pane_state.rollout_path then
-        retire_bridge_generation(opts, target_pane, pane_state)
-        clear_rollout_data(pane_state)
-      elseif not pane_state._inactive_mapping_checked then
-        retire_bridge_generation(opts, target_pane, pane_state)
-        pane_state._inactive_mapping_checked = true
-      end
-      pane_state._codex_active = false
-      pane_state.codex_pid = nil
-      pane_state.codex_process_kind = nil
-      if tab_state.status_pane_id then
-        tab_state.inactive_since = tab_state.inactive_since or now
-        if (now - tab_state.inactive_since) >= opts.bottom_pane.close_grace_seconds then
-          close_status_pane(window, tab_id, tab_state)
+      tab_state.inactive_since = tab_state.inactive_since or now
+      if core.inactivity_grace_elapsed(
+        tab_state.inactive_since,
+        now,
+        opts.bottom_pane.close_grace_seconds
+      ) then
+        if pane_state._codex_active or pane_state.rollout_path or not pane_state._inactive_mapping_checked then
+          retire_bridge_generation(opts, target_pane, pane_state)
+          clear_rollout_data(pane_state)
+          pane_state._inactive_mapping_checked = true
+        end
+        pane_state._codex_active = false
+        pane_state.codex_pid = nil
+        pane_state.codex_process_kind = nil
+        if tab_state.status_pane_id then
+          close_status_pane(window, tab_id, tab_state, "inactive")
         end
       end
       return
     end
     tab_state.inactive_since = nil
     pane_state._inactive_mapping_checked = false
+    if tab_state.status_close_reason == "inactive" then
+      tab_state.status_close_requested = nil
+      tab_state.status_close_reason = nil
+    end
 
     local detected_codex_pid = codex_info.codex_pid
     local wrapper_promotion = pane_state.codex_process_kind == "wrapper" and codex_info.process_kind == "native"
@@ -2421,11 +2620,17 @@ function M.setup(user_opts)
       state.panes[pane_key] = pane_state
     end
 
-    local dims = status_pane:get_dimensions()
-    local cols = (dims and dims.cols and dims.cols > 0) and dims.cols or 80
+    local dims = pane_dimensions(status_pane)
+    local cols = dims and tonumber(dims.cols) or nil
+    local rows = dims and tonumber(dims.viewport_rows or dims.rows) or nil
+    local desired_rows = math.max(1, opts.bottom_pane.rows or 1)
+    if not cols or cols < 1 or rows ~= desired_rows then
+      close_status_pane(window, tab_id, tab_state, "recreate")
+      return
+    end
 
     local line1, line2 = build_lines(opts, codex_info, pane_state, cols)
-    repaint_status_pane(status_pane, tab_state, line1, line2)
+    repaint_status_pane(window, status_pane, tab_state, line1, line2)
   end
 
   -- Prefer update-status, but also hook update-right-status for older builds.

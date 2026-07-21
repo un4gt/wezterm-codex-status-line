@@ -182,9 +182,30 @@ local function to_number(value)
     return value
   end
   if type(value) == "string" then
-    return tonumber(value:gsub(",", ""))
+    local normalized = value:gsub(",", "")
+    return tonumber(normalized)
   end
   return nil
+end
+
+function M.normalize_path(value, windows)
+  local path = trim(value)
+  if not path then
+    return nil
+  end
+
+  local use_windows = windows
+  if use_windows == nil then
+    use_windows = package.config:sub(1, 1) == "\\"
+  end
+  if use_windows then
+    path = path:gsub("/", "\\")
+    -- WezTerm may expose a Windows file URL as /C:/path while Codex records C:\\path.
+    path = path:gsub("^\\([A-Za-z]:\\)", "%1")
+    path = path:lower()
+  end
+  path = path:gsub("[\\/]+$", "")
+  return path ~= "" and path or nil
 end
 
 function M.extract_usage_struct(value)
@@ -276,6 +297,132 @@ function M.build_usage(total_usage, last_usage, context_window)
     context_tokens = context_tokens,
     context_window = window,
     context_remaining_percent = M.context_remaining_percent(context_tokens, window),
+  }
+end
+
+function M.merge_context_window(current, candidate)
+  local next_value = to_number(candidate)
+  if next_value and next_value > 0 then
+    return next_value
+  end
+  return to_number(current)
+end
+
+function M.inactivity_grace_elapsed(started_at, now, grace_seconds)
+  local started = to_number(started_at)
+  local current = to_number(now)
+  if not started or not current then
+    return false
+  end
+  local grace = math.max(0, to_number(grace_seconds) or 0)
+  return (current - started) >= grace
+end
+
+local function split_title_parts(value)
+  local text = trim(value)
+  if not text then
+    return {}
+  end
+
+  local parts = {}
+  local offset = 1
+  while true do
+    local first, last = text:find("%s+|%s+", offset)
+    if not first then
+      table.insert(parts, trim(text:sub(offset)))
+      break
+    end
+    table.insert(parts, trim(text:sub(offset, first - 1)))
+    offset = last + 1
+  end
+  return parts
+end
+
+function M.parse_codex_terminal_title(value, app_name)
+  local expected_app = (trim(app_name) or "codex"):lower()
+  local parts = split_title_parts(value)
+  for index, part in ipairs(parts) do
+    if part and part:lower() == expected_app then
+      local reasoning = trim(parts[index + 1])
+      local project = trim(parts[index + 2])
+      if reasoning and project and not reasoning:find("[%c]") then
+        return {
+          app_name = part,
+          reasoning = reasoning:lower(),
+          project = project,
+          part_index = index,
+        }
+      end
+    end
+  end
+  return nil
+end
+
+-- Once Codex has emitted the managed title, its disappearance is authoritative:
+-- Windows process snapshots can briefly retain the exited Codex PID.
+function M.update_title_bridge_state(current, signal, title_read_ok, process_state)
+  local state = type(current) == "table" and current or {}
+  if type(signal) == "table" then
+    state.seen = true
+    state.ended = false
+    state.reasoning = trim(signal.reasoning)
+    return state, true, "terminal-title"
+  end
+
+  if state.ended then
+    if process_state == false then
+      state.seen = false
+      state.ended = false
+      state.reasoning = nil
+    end
+    return state, false, "terminal-title-ended"
+  end
+
+  if title_read_ok and state.seen then
+    state.ended = true
+    state.reasoning = nil
+    return state, false, "terminal-title-ended"
+  end
+
+  return state, nil, nil
+end
+
+function M.render_layout_key(pane_id, cols, rows, font_size)
+  return table.concat({
+    tostring(pane_id or "?"),
+    tostring(to_number(cols) or "?"),
+    tostring(to_number(rows) or "?"),
+    tostring(to_number(font_size) or "?"),
+  }, "|")
+end
+
+function M.waiting_status(rollout_path, rollout_source, bridge_wait_reason)
+  if trim(rollout_path) then
+    return {
+      kind = "token-data",
+      long = "Token usage: waiting for first response",
+      short = "tokens: waiting for response",
+      minimal = "tokens: waiting",
+    }
+  end
+
+  if trim(rollout_source) == "bridge-waiting" then
+    local reason = trim(bridge_wait_reason)
+    if reason == "mapping-unavailable" or reason == "bridge-root-unavailable" or reason == "pane-id-unavailable" then
+      return {
+        kind = "bridge",
+        long = "Session: waiting for bridge",
+        short = "bridge: waiting",
+        minimal = "waiting",
+      }
+    end
+  end
+
+  return {
+    kind = "rollout",
+    long = "Session: waiting for rollout",
+    short = "rollout: waiting",
+    minimal = "waiting",
   }
 end
 

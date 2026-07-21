@@ -112,6 +112,75 @@ do
   assert_equal(usage.context_tokens, 160735, "active context")
   assert_equal(usage.context_remaining_percent, 56, "context remaining")
   assert_equal(core.extract_token_usage_info({ payload = { usage = object.payload.info } }), nil, "strict event parsing")
+
+  assert_equal(core.merge_context_window(353400, nil), 353400, "missing window preserves known value")
+  assert_equal(core.merge_context_window(353400, 272000), 272000, "new window replaces known value")
+  assert_equal(core.merge_context_window(nil, "272000"), 272000, "string window is accepted")
+end
+
+do
+  assert_equal(core.inactivity_grace_elapsed(100, 100, 2), false, "grace starts without expiring")
+  assert_equal(core.inactivity_grace_elapsed(100, 101, 2), false, "grace retains transient inactivity")
+  assert_equal(core.inactivity_grace_elapsed(100, 102, 2), true, "grace expires at threshold")
+end
+
+do
+  local signal = core.parse_codex_terminal_title("codex | max | wezterm-codex-status-line")
+  assert_equal(signal.reasoning, "max", "terminal title reasoning")
+  assert_equal(signal.project, "wezterm-codex-status-line", "terminal title project")
+
+  signal = core.parse_codex_terminal_title("[ ! ] Action Required | codex | HIGH | app")
+  assert_equal(signal.reasoning, "high", "action title reasoning")
+  assert_equal(core.parse_codex_terminal_title("pwsh.exe"), nil, "unrelated terminal title")
+  assert_equal(core.parse_codex_terminal_title("codex | high"), nil, "incomplete terminal title")
+end
+
+do
+  local state, override, source = core.update_title_bridge_state(nil, { reasoning = "max" }, true, true)
+  assert_equal(override, true, "managed title activates session")
+  assert_equal(source, "terminal-title", "managed title source")
+  assert_equal(state.reasoning, "max", "managed title stores reasoning")
+
+  state, override, source = core.update_title_bridge_state(state, nil, true, true)
+  assert_equal(override, false, "missing managed title ends session")
+  assert_equal(source, "terminal-title-ended", "missing title source")
+
+  state, override = core.update_title_bridge_state(state, nil, false, true)
+  assert_equal(override, false, "stale process cannot reactivate ended title session")
+
+  state, override = core.update_title_bridge_state(state, nil, true, false)
+  assert_equal(override, false, "confirmed process exit remains inactive for current update")
+  assert_equal(state.ended, false, "confirmed process exit resets title generation")
+
+  state, override = core.update_title_bridge_state(state, { reasoning = "low" }, true, true)
+  assert_equal(override, true, "new title starts new session")
+  assert_equal(state.reasoning, "low", "new session reasoning")
+end
+
+do
+  assert_equal(core.render_layout_key(7, 120, 1, 12), "7|120|1|12", "render layout key")
+  assert_equal(
+    core.render_layout_key(7, 120, 1, 13),
+    "7|120|1|13",
+    "font size invalidates render layout"
+  )
+end
+
+do
+  assert_equal(core.normalize_path("/E:/Src/App/", true), "e:\\src\\app", "wezterm Windows file URL")
+  assert_equal(core.normalize_path("E:\\Src\\App", true), "e:\\src\\app", "native Windows path")
+  assert_equal(core.normalize_path("/home/me/app/", false), "/home/me/app", "Unix path")
+end
+
+do
+  local waiting = core.waiting_status(nil, "bridge-waiting", "mapping-unavailable")
+  assert_equal(waiting.kind, "bridge", "missing mapping wait kind")
+
+  waiting = core.waiting_status(nil, "bridge-waiting", "mapping-generation-retired")
+  assert_equal(waiting.kind, "rollout", "retired mapping wait kind")
+
+  waiting = core.waiting_status("rollout.jsonl", "bridge", nil)
+  assert_equal(waiting.kind, "token-data", "first response wait kind")
 end
 
 do
