@@ -169,6 +169,16 @@ class QuietHttpHandler(SimpleHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         pass
 
+    def do_GET(self) -> None:
+        path = self.path.partition("?")[0]
+        requested_paths = getattr(self.server, "requested_paths", None)
+        if requested_paths is not None:
+            requested_paths.append(path)
+        if path == getattr(self.server, "failure_path", None):
+            self.send_error(503, "intentional test failure")
+            return
+        super().do_GET()
+
 
 class BridgeTests(unittest.TestCase):
     def test_python_hook_and_installer(self) -> None:
@@ -573,6 +583,7 @@ class BridgeTests(unittest.TestCase):
         assert shell is not None
         handler = partial(QuietHttpHandler, directory=str(ROOT))
         server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        server.requested_paths = []
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         try:
@@ -601,6 +612,59 @@ class BridgeTests(unittest.TestCase):
                     (home / "wezterm-statusline" / "bin" / "codex_statusline_bridge.ps1").exists()
                 )
                 self.assertTrue((home / "hooks.json").exists())
+                self.assertLess(
+                    server.requested_paths.index("/codex_statusline_core.lua"),
+                    server.requested_paths.index("/codex_statusline.lua"),
+                )
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+
+    @unittest.skipUnless(shutil.which("powershell.exe"), "Windows PowerShell unavailable")
+    def test_windows_remote_download_failure_keeps_installed_assets(self) -> None:
+        shell = shutil.which("powershell.exe")
+        assert shell is not None
+        handler = partial(QuietHttpHandler, directory=str(ROOT))
+        server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        server.failure_path = "/codex_statusline.lua"
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with tempfile.TemporaryDirectory(prefix="codex-statusline-remote-failure-") as temp:
+                root = Path(temp)
+                home = root / "codex-home"
+                module_dir = root / "wezterm-modules"
+                bridge_bin = home / "wezterm-statusline" / "bin"
+                module_dir.mkdir(parents=True)
+                bridge_bin.mkdir(parents=True)
+                installed = {
+                    module_dir / "codex_statusline.lua": b"old-main",
+                    module_dir / "codex_statusline_core.lua": b"old-core",
+                    bridge_bin / "codex_statusline_bridge.ps1": b"old-ps-bridge",
+                    bridge_bin / "codex_statusline_bridge.py": b"old-py-bridge",
+                }
+                for path, content in installed.items():
+                    path.write_bytes(content)
+
+                base_url = f"http://127.0.0.1:{server.server_port}"
+                installer_url = f"{base_url}/install.ps1"
+                command = (
+                    f"$source = Invoke-RestMethod {ps_quote(installer_url)}; "
+                    "& ([scriptblock]::Create([string]$source)) -Install "
+                    f"-CodexHome {ps_quote(home)} "
+                    f"-WezTermModuleDir {ps_quote(module_dir)} "
+                    f"-SourceBaseUrl {ps_quote(base_url)}"
+                )
+                result = subprocess.run(
+                    [shell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                for path, content in installed.items():
+                    self.assertEqual(path.read_bytes(), content)
+                self.assertFalse((home / "hooks.json").exists())
         finally:
             server.shutdown()
             server.server_close()

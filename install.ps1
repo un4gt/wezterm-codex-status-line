@@ -14,6 +14,10 @@ $LuaAssets = @(
   'codex_statusline.lua',
   'codex_statusline_core.lua'
 )
+$LuaInstallAssets = @(
+  'codex_statusline_core.lua',
+  'codex_statusline.lua'
+)
 $BridgeAssets = @(
   'codex_statusline_bridge.ps1',
   'codex_statusline_bridge.py'
@@ -96,7 +100,7 @@ function Get-InstallManifest {
   return Get-Content -Raw -LiteralPath $path | ConvertFrom-Json
 }
 
-function Install-Asset {
+function New-StagedAsset {
   param(
     [Parameter(Mandatory = $true)][string]$Name,
     [Parameter(Mandatory = $true)][string]$Destination
@@ -115,7 +119,11 @@ function Install-Asset {
   }
 
   if ($localSource -and $localSource -eq $destinationPath) {
-    return
+    return [pscustomobject][ordered]@{
+      name = $Name
+      destination = $destinationPath
+      temp_path = $null
+    }
   }
 
   $temp = "$destinationPath.$PID.$([guid]::NewGuid().ToString('N')).tmp"
@@ -129,10 +137,42 @@ function Install-Asset {
       }
       Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/$Name" -OutFile $temp
     }
-    Move-Item -LiteralPath $temp -Destination $destinationPath -Force
-  } finally {
+  } catch {
     if (Test-Path -LiteralPath $temp) {
       Remove-Item -LiteralPath $temp -Force
+    }
+    throw
+  }
+
+  return [pscustomobject][ordered]@{
+    name = $Name
+    destination = $destinationPath
+    temp_path = $temp
+  }
+}
+
+function Install-AssetBatch {
+  param(
+    [Parameter(Mandatory = $true)][object[]]$Assets
+  )
+
+  $staged = @()
+  try {
+    foreach ($asset in $Assets) {
+      $staged += New-StagedAsset -Name $asset.name -Destination $asset.destination
+    }
+    foreach ($asset in $staged) {
+      if (-not $asset.temp_path) {
+        continue
+      }
+      Move-Item -LiteralPath $asset.temp_path -Destination $asset.destination -Force
+      $asset.temp_path = $null
+    }
+  } finally {
+    foreach ($asset in $staged) {
+      if ($asset.temp_path -and (Test-Path -LiteralPath $asset.temp_path)) {
+        Remove-Item -LiteralPath $asset.temp_path -Force
+      }
     }
   }
 }
@@ -626,12 +666,20 @@ function Install-Statusline {
 
   $shouldWriteManifest = $false
   try {
-    foreach ($asset in $LuaAssets) {
-      Install-Asset -Name $asset -Destination (Join-Path $moduleDir $asset)
-    }
+    $installPlan = @()
     foreach ($asset in $BridgeAssets) {
-      Install-Asset -Name $asset -Destination (Join-Path $bridgeBin $asset)
+      $installPlan += [pscustomobject][ordered]@{
+        name = $asset
+        destination = Join-Path $bridgeBin $asset
+      }
     }
+    foreach ($asset in $LuaInstallAssets) {
+      $installPlan += [pscustomobject][ordered]@{
+        name = $asset
+        destination = Join-Path $moduleDir $asset
+      }
+    }
+    Install-AssetBatch -Assets $installPlan
 
     $installedBridge = Join-Path $bridgeBin 'codex_statusline_bridge.ps1'
     Invoke-BridgeInstaller -BridgePath $installedBridge -HomePath $homePath -Action Install

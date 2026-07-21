@@ -82,7 +82,7 @@ terminal_title = ["app-name", "reasoning", "project-name"]
 
 安装 manifest 会保存该键原先是否存在及其完整 JSON 值，以便安全卸载。普通 `-Install` 不修改 Codex 配置。
 
-安装器**不会**修改 `.wezterm.lua`，不会调用或 reload WezTerm，也不会热更新正在运行的 Codex。Lua 模块在下次手动 reload 或新开 WezTerm 后生效；terminal title 从下一次 Codex 会话开始生效。
+安装器**不会**修改 `.wezterm.lua`，不会主动调用 WezTerm reload，也不会热更新正在运行的 Codex。WezTerm 可能在监测到模块文件变化后自行重载；安装器会先完整暂存所有资源，再先写依赖、最后写 Lua 入口，避免重载撞上半安装状态。若未自动生效，则在方便时手动 reload 或新开 WezTerm；terminal title 从下一次 Codex 会话开始生效。
 
 ### 配置 WezTerm
 
