@@ -1,0 +1,281 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://un4gt.github.io/wezterm-codex-status-line/config.schema.json",
+  "title": "WezTerm Codex Status Line configuration",
+  "type": "object",
+  "required": ["schema", "options"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": 1 },
+    "options": {
+      "type": "object",
+      "required": ["label", "bottom_pane", "sessions", "git", "title_bridge", "render", "theme"],
+      "additionalProperties": false,
+      "properties": {
+        "debug": { "type": "boolean" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "codex_home": { "type": "string", "maxLength": 4096 },
+        "log": {
+          "type": "object",
+          "required": ["enabled", "marker"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "marker": { "type": "string", "minLength": 1, "maxLength": 128 }
+          }
+        },
+        "compat": {
+          "type": "object",
+          "required": ["update_right_status"],
+          "additionalProperties": false,
+          "properties": { "update_right_status": { "type": "boolean" } }
+        },
+        "codex_config": {
+          "type": "object",
+          "required": ["enabled", "path", "cache_ttl_seconds"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "path": { "type": "string", "maxLength": 4096 },
+            "cache_ttl_seconds": { "$ref": "#/$defs/nonNegativeNumber" }
+          }
+        },
+        "bottom_pane": {
+          "type": "object",
+          "required": ["rows", "prevent_focus"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "rows": { "type": "integer", "enum": [1, 2] },
+            "layout_debounce_ms": { "type": "integer", "minimum": 250, "maximum": 5000 },
+            "close_grace_seconds": { "$ref": "#/$defs/nonNegativeNumber" },
+            "prevent_focus": { "type": "boolean" }
+          }
+        },
+        "sessions": {
+          "type": "object",
+          "required": ["binding_mode", "allow_fallback_latest"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "binding_mode": { "enum": ["auto", "hook", "heuristic"] },
+            "bridge_dir": { "type": "string", "maxLength": 4096 },
+            "allow_fallback_latest": { "type": "boolean" },
+            "resume_fallback_enabled": { "type": "boolean" },
+            "resume_fallback_max_age_seconds": { "type": "integer", "minimum": 1, "maximum": 300 },
+            "resume_fallback_clock_skew_seconds": { "type": "integer", "minimum": 0, "maximum": 30 },
+            "resume_fallback_scan_ttl_seconds": { "$ref": "#/$defs/nonNegativeNumber" },
+            "cache_ttl_seconds": { "$ref": "#/$defs/nonNegativeNumber" },
+            "full_scan_ttl_seconds": { "$ref": "#/$defs/nonNegativeNumber" },
+            "tail_ttl_seconds": { "$ref": "#/$defs/nonNegativeNumber" },
+            "open_fail_clear_seconds": { "$ref": "#/$defs/nonNegativeNumber" },
+            "initial_seek_bytes": { "$ref": "#/$defs/nonNegativeInteger" },
+            "activity_seek_bytes": { "$ref": "#/$defs/nonNegativeInteger" },
+            "activity_max_seek_bytes": { "$ref": "#/$defs/nonNegativeInteger" },
+            "max_meta_lines": { "type": "integer", "minimum": 1, "maximum": 10000 },
+            "max_tail_lines": { "type": "integer", "minimum": 1, "maximum": 100000 }
+          }
+        },
+        "git": {
+          "type": "object",
+          "required": ["enabled"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "cache_ttl_seconds": { "$ref": "#/$defs/nonNegativeNumber" }
+          }
+        },
+        "title_bridge": {
+          "type": "object",
+          "required": ["enabled"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "app_name": { "type": "string", "minLength": 1, "maxLength": 64 }
+          }
+        },
+        "user_vars": {
+          "type": "object",
+          "required": ["model", "thinking", "provider", "active"],
+          "additionalProperties": false,
+          "properties": {
+            "model": { "$ref": "#/$defs/stringList" },
+            "thinking": { "$ref": "#/$defs/stringList" },
+            "provider": { "$ref": "#/$defs/stringList" },
+            "active": { "$ref": "#/$defs/stringList" }
+          }
+        },
+        "process_match": {
+          "type": "object",
+          "required": ["enabled", "names", "argv_markers", "terminal_names", "grace_seconds", "tree_cache_ttl_seconds"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "names": { "$ref": "#/$defs/stringList" },
+            "argv_markers": { "$ref": "#/$defs/stringList" },
+            "terminal_names": { "$ref": "#/$defs/stringList" },
+            "grace_seconds": { "$ref": "#/$defs/nonNegativeNumber" },
+            "tree_cache_ttl_seconds": { "$ref": "#/$defs/nonNegativeNumber" }
+          }
+        },
+        "activity": {
+          "type": "object",
+          "required": ["labels"],
+          "additionalProperties": false,
+          "properties": {
+            "labels": {
+              "type": "object",
+              "required": ["plan", "review", "goal_active", "goal_paused", "goal_blocked", "goal_usage_limited", "goal_budget_limited", "goal_complete"],
+              "additionalProperties": false,
+              "properties": {
+                "plan": { "$ref": "#/$defs/shortLabel" },
+                "review": { "$ref": "#/$defs/shortLabel" },
+                "goal_active": { "$ref": "#/$defs/shortLabel" },
+                "goal_paused": { "$ref": "#/$defs/shortLabel" },
+                "goal_blocked": { "$ref": "#/$defs/shortLabel" },
+                "goal_usage_limited": { "$ref": "#/$defs/shortLabel" },
+                "goal_budget_limited": { "$ref": "#/$defs/shortLabel" },
+                "goal_complete": { "$ref": "#/$defs/shortLabel" }
+              }
+            }
+          }
+        },
+        "icon": {
+          "type": "object",
+          "required": ["text"],
+          "additionalProperties": false,
+          "properties": { "text": { "type": "string", "minLength": 1, "maxLength": 8, "default": "" } }
+        },
+        "pricing": {
+          "type": "object",
+          "required": ["models"],
+          "additionalProperties": false,
+          "properties": {
+            "models": {
+              "type": "object",
+              "maxProperties": 64,
+              "propertyNames": { "pattern": "^[a-z0-9][a-z0-9._:/-]{0,127}$" },
+              "additionalProperties": { "$ref": "#/$defs/modelPrice" }
+            }
+          }
+        },
+        "render": {
+          "type": "object",
+          "required": ["powerline", "plain_fallback", "segment_order", "disabled_segments"],
+          "additionalProperties": false,
+          "properties": {
+            "powerline": { "type": "boolean" },
+            "plain_fallback": { "type": "boolean" },
+            "model_display": { "type": "string", "enum": ["name", "icon_name", "icon"], "default": "name" },
+            "segment_order": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 26,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/segmentId" }
+            },
+            "disabled_segments": {
+              "type": "array",
+              "maxItems": 26,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/segmentId" }
+            }
+          }
+        },
+        "theme": {
+          "type": "object",
+          "required": ["bg", "fg", "dim", "segments"],
+          "additionalProperties": false,
+          "properties": {
+            "bg": { "$ref": "#/$defs/color" },
+            "fg": { "$ref": "#/$defs/color" },
+            "dim": { "$ref": "#/$defs/color" },
+            "segments": {
+              "type": "object",
+              "required": ["label", "model", "reasoning", "provider", "cwd", "git", "context", "used_tokens"],
+              "additionalProperties": false,
+              "properties": {
+                "label": { "$ref": "#/$defs/segmentTheme" },
+                "model": { "$ref": "#/$defs/segmentTheme" },
+                "reasoning": { "$ref": "#/$defs/segmentTheme" },
+                "activity": { "$ref": "#/$defs/segmentTheme" },
+                "provider": { "$ref": "#/$defs/segmentTheme" },
+                "personality": { "$ref": "#/$defs/segmentTheme" },
+                "service_tier": { "$ref": "#/$defs/segmentTheme" },
+                "cwd": { "$ref": "#/$defs/segmentTheme" },
+                "project": { "$ref": "#/$defs/segmentTheme" },
+                "git": { "$ref": "#/$defs/segmentTheme" },
+                "permissions": { "$ref": "#/$defs/segmentTheme" },
+                "approval": { "$ref": "#/$defs/segmentTheme" },
+                "context": { "$ref": "#/$defs/segmentTheme" },
+                "context_used": { "$ref": "#/$defs/segmentTheme" },
+                "context_window": { "$ref": "#/$defs/segmentTheme" },
+                "used_tokens": { "$ref": "#/$defs/segmentTheme" },
+                "cache_rate": { "$ref": "#/$defs/segmentTheme" },
+                "cost": { "$ref": "#/$defs/segmentTheme" },
+                "input_tokens": { "$ref": "#/$defs/segmentTheme" },
+                "cached_tokens": { "$ref": "#/$defs/segmentTheme" },
+                "output_tokens": { "$ref": "#/$defs/segmentTheme" },
+                "reasoning_tokens": { "$ref": "#/$defs/segmentTheme" },
+                "thread_id": { "$ref": "#/$defs/segmentTheme" },
+                "task_progress": { "$ref": "#/$defs/segmentTheme" },
+                "codex_version": { "$ref": "#/$defs/segmentTheme" },
+                "icon": { "$ref": "#/$defs/segmentTheme" }
+              }
+            },
+            "glyphs": {
+              "type": "object",
+              "required": ["sep", "branch", "folder"],
+              "additionalProperties": false,
+              "properties": {
+                "sep": { "type": "string", "maxLength": 8 },
+                "branch": { "type": "string", "maxLength": 8 },
+                "folder": { "type": "string", "maxLength": 8 }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "modelPrice": {
+      "type": "object",
+      "required": ["input", "cached_input", "output"],
+      "additionalProperties": false,
+      "properties": {
+        "input": { "type": "number", "minimum": 0, "maximum": 1000000 },
+        "cached_input": { "type": "number", "minimum": 0, "maximum": 1000000 },
+        "output": { "type": "number", "minimum": 0, "maximum": 1000000 }
+      }
+    },
+    "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "nonNegativeNumber": { "type": "number", "minimum": 0 },
+    "nonNegativeInteger": { "type": "integer", "minimum": 0 },
+    "shortLabel": { "type": "string", "minLength": 1, "maxLength": 32 },
+    "stringList": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+    },
+    "segmentId": {
+      "enum": [
+        "label", "model", "reasoning", "activity", "provider", "personality", "service_tier",
+        "cwd", "project", "git", "permissions", "approval", "context", "context_used",
+        "context_window", "used_tokens", "cache_rate", "cost", "input_tokens", "cached_tokens", "output_tokens",
+        "reasoning_tokens", "thread_id", "task_progress", "codex_version", "icon"
+      ]
+    },
+    "segmentTheme": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bg", "fg"],
+      "properties": {
+        "bg": { "$ref": "#/$defs/color" },
+        "fg": { "$ref": "#/$defs/color" }
+      }
+    }
+  }
+}

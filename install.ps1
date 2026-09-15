@@ -3,29 +3,54 @@ param(
   [switch]$Install,
   [switch]$Uninstall,
   [switch]$EnableCodexTitleBridge,
+  [string]$UserHome,
   [string]$CodexHome,
   [string]$WezTermModuleDir,
-  [string]$SourceBaseUrl = 'https://raw.githubusercontent.com/un4gt/wezterm-codex-status-line/main'
+  [string]$SourceBaseUrl = 'https://raw.githubusercontent.com/un4gt/wezterm-codex-status-line/main',
+  [string]$PackageName = 'wezterm-codex-status-line',
+  [string]$PackageVersion = '0.1.0',
+  [string]$InstallerRunner = 'powershell'
 )
 
 $ErrorActionPreference = 'Stop'
 
 $LuaAssets = @(
   'codex_statusline.lua',
-  'codex_statusline_core.lua'
-)
-$LuaInstallAssets = @(
   'codex_statusline_core.lua',
-  'codex_statusline.lua'
+  'codex_statusline/version.lua',
+  'codex_statusline/domain/common.lua',
+  'codex_statusline/domain/process.lua',
+  'codex_statusline/domain/session.lua',
+  'codex_statusline/domain/prices.lua',
+  'codex_statusline/domain/pricing.lua',
+  'codex_statusline/domain/render.lua',
+  'codex_statusline/util.lua',
+  'codex_statusline/config.lua',
+  'codex_statusline/session_index.lua',
+  'codex_statusline/rollout.lua',
+  'codex_statusline/git.lua',
+  'codex_statusline/process.lua',
+  'codex_statusline/formatting.lua',
+  'codex_statusline/legacy_renderer.lua',
+  'codex_statusline/renderer.lua',
+  'codex_statusline/layout.lua',
+  'codex_statusline/state.lua',
+  'codex_statusline/wezterm_adapter.lua',
+  'codex_statusline/lifecycle.lua'
 )
+$LuaInstallAssets = @($LuaAssets | Where-Object { $_ -ne 'codex_statusline.lua' }) + @('codex_statusline.lua')
 $BridgeAssets = @(
   'codex_statusline_bridge.ps1',
-  'codex_statusline_bridge.py'
+  'codex_statusline_bridge.py',
+  'codex_statusline_bridge.js'
 )
 $CodexTitleKeyPath = 'tui.terminal_title'
 $CodexTitleInstalledValue = @('app-name', 'reasoning', 'project-name')
 
 function Get-UserHome {
+  if ($UserHome) {
+    return [System.IO.Path]::GetFullPath($UserHome)
+  }
   if ($env:USERPROFILE) {
     return [System.IO.Path]::GetFullPath($env:USERPROFILE)
   }
@@ -84,6 +109,19 @@ function ConvertTo-ComparableJson {
     return 'null'
   }
   return ($Value | ConvertTo-Json -Compress -Depth 40)
+}
+
+function Get-Sha256Hex {
+  param([Parameter(Mandatory = $true)][string]$Path)
+  $stream = [System.IO.File]::OpenRead($Path)
+  $sha = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    $bytes = $sha.ComputeHash($stream)
+    return ([System.BitConverter]::ToString($bytes)).Replace('-', '').ToLowerInvariant()
+  } finally {
+    $sha.Dispose()
+    $stream.Dispose()
+  }
 }
 
 function Test-JsonValueEqual {
@@ -597,14 +635,31 @@ function Update-InstallManifest {
   } else {
     [pscustomobject]@{}
   }
-  $manifest | Add-Member -MemberType NoteProperty -Name schema -Value 3 -Force
+  $manifest | Add-Member -MemberType NoteProperty -Name schema -Value 4 -Force
+  $manifest | Add-Member -MemberType NoteProperty -Name package -Value ([pscustomobject][ordered]@{
+    name = $PackageName
+    version = $PackageVersion
+    runner = $InstallerRunner
+    installed_at_unix_ms = [long](([DateTime]::UtcNow - [DateTime]'1970-01-01').TotalMilliseconds)
+  }) -Force
   $manifest | Add-Member -MemberType NoteProperty -Name wezterm_module_dir -Value $ModuleDir -Force
+  $manifest | Add-Member -MemberType NoteProperty -Name config_path -Value (Join-Path $ModuleDir 'codex_statusline_config.json') -Force
   $manifest | Add-Member -MemberType NoteProperty -Name lua_modules -Value @(
-    (Join-Path $ModuleDir 'codex_statusline.lua'),
-    (Join-Path $ModuleDir 'codex_statusline_core.lua')
+    $LuaAssets | ForEach-Object { Join-Path $ModuleDir $_ }
   ) -Force
   $manifest | Add-Member -MemberType NoteProperty -Name bridge_bin -Value $BridgeBin -Force
+  $manifest | Add-Member -MemberType NoteProperty -Name bridge_runtime -Value 'powershell.exe' -Force
   $manifest | Add-Member -MemberType NoteProperty -Name source_base_url -Value $SourceBaseUrl -Force
+  $assetHashes = [ordered]@{}
+  foreach ($assetPath in @(
+    $LuaAssets | ForEach-Object { Join-Path $ModuleDir $_ }
+    $BridgeAssets | ForEach-Object { Join-Path $BridgeBin $_ }
+  )) {
+    if (Test-Path -LiteralPath $assetPath) {
+      $assetHashes[$assetPath] = Get-Sha256Hex -Path $assetPath
+    }
+  }
+  $manifest | Add-Member -MemberType NoteProperty -Name assets -Value ([pscustomobject]$assetHashes) -Force
   if ($TitleBridgeRecord) {
     $manifest | Add-Member -MemberType NoteProperty -Name codex_title_bridge -Value $TitleBridgeRecord -Force
   } elseif (Test-ObjectProperty -Value $manifest -Name 'codex_title_bridge') {
@@ -633,6 +688,25 @@ function Test-WezTermConfig {
     return
   }
   Write-Warning 'No WezTerm config was found. Create ~/.wezterm.lua and call require("codex_statusline").setup().'
+}
+
+function Get-WezTermConfigLoadingStatusline {
+  param([Parameter(Mandatory = $true)][string]$ModuleDir)
+
+  $candidates = @(
+    (Join-Path (Get-UserHome) '.wezterm.lua'),
+    (Join-Path $ModuleDir 'wezterm.lua')
+  )
+  foreach ($configPath in $candidates) {
+    if (-not (Test-Path -LiteralPath $configPath)) {
+      continue
+    }
+    $raw = [System.IO.File]::ReadAllText($configPath)
+    if ($raw -match 'require\s*\(\s*["'']codex_statusline["'']\s*\)') {
+      return $configPath
+    }
+  }
+  return $null
 }
 
 function Remove-FileIfPresent {
@@ -715,8 +789,6 @@ function Uninstall-Statusline {
       Restore-CodexTitleBridgeConfig -HomePath $homePath -Record $titleRecord
     }
   }
-  Remove-FileIfPresent -Path (Join-Path $bridgeRoot 'bridge.json')
-
   if (Test-Path -LiteralPath $installedBridge) {
     Invoke-BridgeInstaller -BridgePath $installedBridge -HomePath $homePath -Action Uninstall
   } elseif ($localBridge -and (Test-Path -LiteralPath $localBridge)) {
@@ -731,6 +803,7 @@ function Uninstall-Statusline {
   foreach ($asset in $BridgeAssets) {
     Remove-FileIfPresent -Path (Join-Path $bridgeBin $asset)
   }
+  Remove-FileIfPresent -Path (Join-Path $bridgeRoot 'bridge.json')
   Remove-DirectoryIfEmpty -Path $bridgeBin
   Remove-DirectoryIfEmpty -Path $bridgeRoot
   Write-Host 'WezTerm Codex statusline uninstalled.'
@@ -743,6 +816,11 @@ if ($Uninstall -and $EnableCodexTitleBridge) {
   throw '-EnableCodexTitleBridge can only be used with installation.'
 }
 if ($Uninstall) {
+  $activeConfig = Get-WezTermConfigLoadingStatusline -ModuleDir (Get-WezTermModuleDir)
+  if ($activeConfig) {
+    [Console]::Error.WriteLine("Remove require(`"codex_statusline`") from $activeConfig, then run uninstall again.")
+    exit 3
+  }
   Uninstall-Statusline
 } else {
   Install-Statusline

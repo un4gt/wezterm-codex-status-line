@@ -79,7 +79,9 @@ function Test-IsOurHandler {
   }
   $command = [string]$Handler.command
   $windowsCommand = [string]$Handler.commandWindows
-  return $command.Contains('codex_statusline_bridge.py') -or $windowsCommand.Contains('codex_statusline_bridge.ps1')
+  return $command.Contains('codex_statusline_bridge.py') `
+    -or $command.Contains('codex_statusline_bridge.js') `
+    -or $windowsCommand.Contains('codex_statusline_bridge.ps1')
 }
 
 function Test-HookHandlerCurrent {
@@ -173,6 +175,7 @@ function Install-Bridge {
     installed_at_unix_ms = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
     powershell_bridge = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'codex_statusline_bridge.ps1'))
     python_bridge = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'codex_statusline_bridge.py'))
+    javascript_bridge = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'codex_statusline_bridge.js'))
   }
   Write-Utf8JsonAtomic -Path (Join-Path $bridgeRoot 'bridge.json') -Value $manifest
   Write-Host "Codex statusline bridge installed in $hooksPath"

@@ -1,4 +1,6 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
-docs/
+/.npm-cache/
+/.uv-cache/
+/docs/

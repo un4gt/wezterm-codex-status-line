@@ -1,0 +1,40 @@
+{
+  "name": "wezterm-codex-status-line",
+  "version": "0.1.0",
+  "description": "Install and configure the WezTerm Codex status line",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "wezterm-codex-status-line": "dist/cli.mjs"
+  },
+  "files": [
+    "assets",
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "sync-assets": "node ../../scripts/sync-package-assets.mjs",
+    "build": "npm run sync-assets && esbuild src/cli.ts --bundle --platform=node --format=esm --target=node20 --banner:js=\"#!/usr/bin/env node\" --outfile=dist/cli.mjs",
+    "typecheck": "tsc --noEmit",
+    "pretest": "npm run sync-assets",
+    "test": "tsx --test test/*.test.ts",
+    "prepack": "npm run typecheck && npm run build && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "ajv": "^8.17.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

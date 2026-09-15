@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Terminal status line mark</title>
+  <rect width="64" height="64" rx="10" fill="#111519"/>
+  <rect x="7" y="9" width="50" height="46" rx="5" fill="none" stroke="#58d6c5" stroke-width="4"/>
+  <path d="M16 22l9 8-9 8M31 39h16" fill="none" stroke="#f5c451" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+  <path d="M9 47h46" stroke="#61d6a4" stroke-width="4"/>
+</svg>

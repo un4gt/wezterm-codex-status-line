@@ -1,0 +1,17 @@
+[
+  { "name": "Sol separates cached input and includes reasoning in output", "model": "gpt-5.6-sol", "usage": { "input_raw": 1000000, "cached": 800000, "output": 100000, "reasoning": 50000 }, "expected": ["↑1M ↓100K", "Cache 80%", "Cost ~$3.12"] },
+  { "name": "Astra built-in price", "model": "gpt-6-astra", "usage": { "input_raw": 1000000, "cached": 800000, "output": 100000 }, "expected": ["↑1M ↓100K", "Cache 80%", "Cost ~$7.80"] },
+  { "name": "Terra built-in price", "model": "gpt-5.6-terra", "usage": { "input_raw": 1000000, "cached": 800000, "output": 100000 }, "expected": ["↑1M ↓100K", "Cache 80%", "Cost ~$1.76"] },
+  { "name": "Luna built-in price", "model": "gpt-5.6-luna", "usage": { "input_raw": 1000000, "cached": 800000, "output": 100000 }, "expected": ["↑1M ↓100K", "Cache 80%", "Cost ~$0.18"] },
+  { "name": "provider and dated snapshot use base price", "model": "openai/GPT-5.6-SOL-2026-09-01", "usage": { "input_raw": 1000000, "cached": 800000, "output": 100000 }, "expected": ["↑1M ↓100K", "Cache 80%", "Cost ~$3.12"] },
+  { "name": "short alias uses canonical override", "model": "Sol", "pricing": { "models": { "gpt-5.6-sol": { "input": 3, "cached_input": 1, "output": 5 } } }, "usage": { "input_raw": 1000000, "cached": 800000, "output": 100000 }, "expected": ["↑1M ↓100K", "Cache 80%", "Cost ~$1.90"] },
+  { "name": "custom model and zero cache price", "model": "my-model", "pricing": { "models": { "my-model": { "input": 1, "cached_input": 0, "output": 2 } } }, "usage": { "input_raw": 1000000, "cached": 800000, "output": 100000 }, "expected": ["↑1M ↓100K", "Cache 80%", "Cost ~$0.40"] },
+  { "name": "zero custom price remains free", "model": "gpt-5.6-sol", "pricing": { "models": { "gpt-5.6-sol": { "input": 0, "cached_input": 0, "output": 0 } } }, "usage": { "input_raw": 1000000, "cached": 800000, "output": 100000 }, "expected": ["↑1M ↓100K", "Cache 80%", "Cost ~$0.00"] },
+  { "name": "unknown variant has no guessed price", "model": "gpt-5.6-sol-pro", "usage": { "input_raw": 1000000, "cached": 800000, "output": 100000 }, "expected": ["↑1M ↓100K", "Cache 80%", "Cost —"] },
+  { "name": "zero input has no cache ratio", "model": "gpt-5.6-sol", "usage": { "input_raw": 0, "cached": 0, "output": 0 }, "expected": ["↑0 ↓0", "Cache —", "Cost ~$0.00"] },
+  { "name": "cache ratio rounds to one decimal", "model": "gpt-5.6-sol", "usage": { "input_raw": 3000, "cached": 1000, "output": 1000 }, "expected": ["↑3K ↓1K", "Cache 33.3%", "Cost ~$0.03"] },
+  { "name": "tiny nonzero cost stays visible", "model": "gpt-5.6-sol", "usage": { "input_raw": 1000, "cached": 800, "output": 100 }, "expected": ["↑1K ↓100", "Cache 80%", "Cost <$0.01"] },
+  { "name": "cached count cannot exceed total input", "model": "gpt-5.6-sol", "usage": { "input_raw": 1000000, "cached": 2000000, "output": 100000 }, "expected": ["↑1M ↓100K", "Cache 100%", "Cost ~$2.40"] },
+  { "name": "net input can reconstruct total input", "model": "gpt-5.6-sol", "usage": { "input": 200000, "cached": 800000, "output": 100000 }, "expected": ["↑1M ↓100K", "Cache 80%", "Cost ~$3.12"] },
+  { "name": "missing input does not report a false cost", "model": "gpt-5.6-sol", "usage": { "output": 100000 }, "expected": ["↑— ↓100K", "Cache —", "Cost —"] }
+]

@@ -16,6 +16,7 @@ from typing import Any
 
 BRIDGE_PY = "codex_statusline_bridge.py"
 BRIDGE_PS1 = "codex_statusline_bridge.ps1"
+BRIDGE_JS = "codex_statusline_bridge.js"
 
 
 def codex_home(override: str | None = None) -> Path:
@@ -43,8 +44,10 @@ def write_json_atomic(path: Path, value: Any) -> None:
 def is_our_handler(handler: Any) -> bool:
     if not isinstance(handler, dict):
         return False
-    return BRIDGE_PY in str(handler.get("command", "")) or BRIDGE_PS1 in str(
-        handler.get("commandWindows", "")
+    return (
+        BRIDGE_PY in str(handler.get("command", ""))
+        or BRIDGE_JS in str(handler.get("command", ""))
+        or BRIDGE_PS1 in str(handler.get("commandWindows", ""))
     )
 
 

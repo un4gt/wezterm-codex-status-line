@@ -1,289 +1,110 @@
-local callbacks = {}
-local panes = {}
-local next_pane_id = 2
-local close_commands = {}
+local fake = require("tests.fake_wezterm")
+local function eq(a, b, label) assert(a == b, label .. ": " .. tostring(a) .. " ~= " .. tostring(b)) end
+local function contains(s, part, label) assert(tostring(s):find(part, 1, true), label) end
 
-local function assert_equal(actual, expected, label)
-  if actual ~= expected then
-    error(string.format("%s: expected %s, got %s", label, tostring(expected), tostring(actual)))
-  end
+local encode = require("codex_statusline.util").base64_encode
+for source, expected in pairs({ [""] = "", f = "Zg==", fo = "Zm8=", foo = "Zm9v",
+  foob = "Zm9vYg==", fooba = "Zm9vYmE=", foobar = "Zm9vYmFy", ["\x00\xff\x10"] = "AP8Q" }) do
+  eq(encode(source), expected, "RFC 4648 base64 vector")
 end
 
-local function assert_contains(value, expected, label)
-  if not tostring(value):find(expected, 1, true) then
-    error(string.format("%s: expected %q in %q", label, expected, tostring(value)))
-  end
-end
+local h = fake.new()
+h:start()
+h:settle()
+local status = assert(h:status())
+contains(status.last_output, "high", "initial title reasoning")
+local line = status.last_output:match("\x1b%[2J(.-)\x1b%[K")
+assert(line, "status frame contains one rendered line")
+eq(h.wezterm.column_width(line), 120, "version anchors full width")
+local version_text = require("codex_statusline.version").text
+local suffix = "   " .. version_text .. " "
+eq(line:sub(-#suffix), suffix, "project icon followed by installed plugin version")
 
-local wezterm = {
-  GLOBAL = {},
-  action = {},
-  mux = {},
-  procinfo = {},
-  url = {},
-  version = "test",
-  home_dir = "C:\\Users\\test",
-  executable_dir = "C:\\Program Files\\WezTerm",
-  fail_background_child = false,
-}
+h.main.title = "codex | max | app"
+h:tick()
+contains(status.last_output, "max", "live title reasoning")
+local painted = status.inject_count
+h.window.font_size = 13
+h:tick()
+eq(status.inject_count, painted + 1, "font changes repaint")
+painted = status.inject_count
+h:tick()
+eq(status.inject_count, painted, "unchanged frame does not repaint")
 
-function wezterm.on(name, callback)
-  callbacks[name] = callback
-end
+h.main.title = "pwsh.exe"
+h:settle()
+eq(h:status(), status, "MCP title changes retain live owner")
+eq(#h.close_commands, 0, "MCP title does not close status")
+h.main.user_vars.codex_active = "false"
+h:tick()
+eq(h.close_commands[1][6], tostring(status.id), "explicit exit targets status")
+h:complete_close()
+h:tick()
+eq(h:status(), nil, "completed close clears binding")
+assert(h.panes[h.main.id], "owner survives")
+h:assert_no_errors()
 
-function wezterm.format(items)
-  local parts = {}
-  for _, item in ipairs(items or {}) do
-    if type(item) == "table" and item.Text then
-      table.insert(parts, item.Text)
+for _, powerline in ipairs({ false, true }) do
+  for _, rows in ipairs({ 1, 2 }) do
+    local versioned = fake.new({ render = { powerline = powerline, disabled_segments = { "icon" } },
+      bottom_pane = { rows = rows } })
+    local adapter = require("codex_statusline.wezterm_adapter").new(versioned.wezterm)
+    local opts = require("codex_statusline.config").new(versioned.wezterm, adapter).resolve(versioned.options)
+    local renderer = require("codex_statusline.renderer").new(versioned.wezterm, opts,
+      { git_info_for_cwd = function() return {} end }, adapter)
+    for _, cols in ipairs({ 1, 2, 8, 25, 50, 75, 120 }) do
+      local first, second = renderer.build_lines(opts, { model = "gpt-5.6-codex" }, {}, cols)
+      assert(versioned.wezterm.column_width(first) <= cols, "version never wraps narrow panes")
+      if cols >= #version_text + 2 then
+        eq(first:sub(-#version_text - 2), " " .. version_text .. " ", "version visible with icon disabled")
+        eq(versioned.wezterm.column_width(first), cols, "version stays flush right")
+      end
+      if second then assert(not second:find(version_text, 1, true), "two rows show version only once") end
     end
   end
-  return table.concat(parts)
 end
 
-function wezterm.column_width(value)
-  return #tostring(value or "")
+for _, delay in ipairs({ 0, 249, 5001, 250.5, "1000" }) do
+  local invalid = fake.new({ bottom_pane = { layout_debounce_ms = delay } })
+  eq(invalid.callbacks["update-status"], nil, "invalid debounce disables setup safely")
+  contains(table.concat(invalid.logs, "\n"), "layout_debounce_ms", "invalid debounce diagnostic")
+end
+for _, delay in ipairs({ 250, 1000, 5000 }) do
+  local valid = fake.new({ bottom_pane = { layout_debounce_ms = delay } })
+  valid:start()
+  valid:tick(0)
+  valid:tick(delay / 1000)
+  assert(valid:status(), "inclusive debounce bounds")
 end
 
-function wezterm.log_info() end
-function wezterm.log_error() end
+local missing = fake.new()
+missing:start()
+missing:settle()
+local existing = missing:status()
+local saved = package.loaded["codex_statusline.layout"]
+package.loaded["codex_statusline.layout"] = nil
+package.preload["codex_statusline.layout"] = function() error("simulated missing layout") end
+-- Force a dependency read during setup, as happens after an incomplete installation.
+local saved_adapter = package.loaded["codex_statusline.wezterm_adapter"]
+package.loaded["codex_statusline.wezterm_adapter"] = nil
+eq(pcall(require("codex_statusline").setup, {}), true, "missing dependency leaves config usable")
+missing:tick()
+eq(missing:status(), existing, "failed setup does not mutate user panes")
+eq(#missing.close_commands, 0, "missing dependency does not close panes")
+package.loaded["codex_statusline.layout"] = saved
+package.loaded["codex_statusline.wezterm_adapter"] = saved_adapter
+package.preload["codex_statusline.layout"] = nil
 
-function wezterm.background_child_process(args)
-  if wezterm.fail_background_child then
-    error("simulated background child failure")
-  end
-  table.insert(close_commands, args)
-end
+print("statusline lifecycle and rendering tests passed")
 
-function wezterm.action.ActivatePaneDirection(direction)
-  return { kind = "activate", direction = direction }
-end
-
-function wezterm.mux.get_pane(id)
-  return panes[id]
-end
-
-function wezterm.url.parse(value)
-  return { file_path = tostring(value):gsub("^file://", "") }
-end
-
-local main = {
-  id = 1,
-  title = "codex | high | app",
-  dimensions = { cols = 120, viewport_rows = 30 },
-}
-panes[main.id] = main
-
-function main:pane_id()
-  return self.id
-end
-
-function main:get_title()
-  return self.title
-end
-
-function main:get_dimensions()
-  return self.dimensions
-end
-
-function main:get_user_vars()
-  return {}
-end
-
-function main:get_foreground_process_name()
-  return "C:\\tools\\codex.exe"
-end
-
-function main:get_foreground_process_info()
-  return {
-    pid = 100,
-    ppid = 10,
-    executable = "C:\\tools\\codex.exe",
-    argv = { "C:\\tools\\codex.exe" },
-    children = {},
+if type(io.stdout) == "userdata" then
+  local registry = require("codex_statusline.state")
+  local saved_state = { schema = 8, bindings = {}, panes = {}, tabs = {}, close_requests = {}, next_generation = 9 }
+  local shared = {
+    GLOBAL = { codex_statusline_state = io.stdout },
+    json_encode = function(value) eq(value, io.stdout, "shared state encoded"); return "shared-state" end,
+    json_parse = function(value) eq(value, "shared-state", "shared state decoded"); return saved_state end,
   }
+  eq(registry.load(shared), saved_state, "shared GLOBAL is not reset")
+  eq(registry.generation(saved_state, 1000), "1000:10", "shared generation preserved")
 end
-
-function main:get_current_working_dir()
-  return { file_path = "E:\\src\\app" }
-end
-
-function main:activate()
-  self.activated = true
-end
-
-local tab = { id = 99 }
-
-function tab:tab_id()
-  return self.id
-end
-
-function tab:active_pane()
-  return main
-end
-
-function tab:panes_with_info()
-  local infos = {
-    { pane = main, top = 0, width = 120, height = 30, is_active = true },
-  }
-  for id, pane in pairs(panes) do
-    if id ~= main.id then
-      table.insert(infos, { pane = pane, top = 30, width = 120, height = 1, is_active = false })
-    end
-  end
-  return infos
-end
-
-local window = {
-  font_size = 12,
-}
-
-function window:window_id()
-  return 7
-end
-
-function window:active_tab()
-  return tab
-end
-
-function window:effective_config()
-  return { font_size = self.font_size }
-end
-
-function window:perform_action(action, pane)
-end
-
-local function new_status_pane()
-  local pane = {
-    id = next_pane_id,
-    title = "",
-    dimensions = { cols = 120, viewport_rows = 1 },
-    inject_count = 0,
-    last_output = nil,
-  }
-  next_pane_id = next_pane_id + 1
-
-  function pane:pane_id()
-    return self.id
-  end
-
-  function pane:get_title()
-    return self.title
-  end
-
-  function pane:set_title(title)
-    self.title = title
-  end
-
-  function pane:get_dimensions()
-    return self.dimensions
-  end
-
-  function pane:inject_output(output)
-    self.inject_count = self.inject_count + 1
-    self.last_output = output
-  end
-
-  function pane:get_domain_name()
-    return "local"
-  end
-
-  panes[pane.id] = pane
-  return pane
-end
-
-function main:split()
-  return new_status_pane()
-end
-
-package.preload.wezterm = function()
-  return wezterm
-end
-
-require("codex_statusline").setup({
-  log = { enabled = false },
-  codex_config = { enabled = false },
-  git = { enabled = false },
-  sessions = { enabled = false },
-  bottom_pane = {
-    rows = 1,
-    close_grace_seconds = 0,
-  },
-  render = { powerline = false },
-})
-
-local update = callbacks["update-status"]
-assert_equal(type(update), "function", "update-status handler")
-
-update(window, main)
-local status = panes[2]
-assert_equal(status ~= nil, true, "status pane created")
-assert_contains(status.last_output, "r:high", "initial title reasoning")
-
-main.title = "codex | max | app"
-update(window, main)
-assert_contains(status.last_output, "r:max", "live title reasoning")
-
-local before_zoom = status.inject_count
-window.font_size = 13
-update(window, main)
-assert_equal(status.inject_count, before_zoom + 1, "font size forces repaint")
-
-status.dimensions.viewport_rows = 0
-wezterm.fail_background_child = true
-update(window, main)
-assert_equal(panes[status.id] ~= nil, true, "failed exact close retains status pane")
-assert_equal(#close_commands, 0, "failed exact close does not queue a command")
-
-wezterm.fail_background_child = false
-update(window, main)
-assert_equal(panes[status.id] ~= nil, true, "exact close remains asynchronous")
-assert_equal(#close_commands, 1, "invalid status pane queues one exact close")
-assert_equal(close_commands[1][2], "cli", "exact close uses wezterm cli")
-assert_equal(close_commands[1][3], "kill-pane", "exact close uses kill-pane")
-assert_equal(close_commands[1][4], "--pane-id", "exact close specifies pane id")
-assert_equal(close_commands[1][5], tostring(status.id), "exact close targets only status pane")
-
-update(window, main)
-assert_equal(#close_commands, 1, "pending close is not queued repeatedly")
-assert_equal(panes[main.id] ~= nil, true, "pending status close never removes main pane")
-
-panes[status.id] = nil
-update(window, main)
-status = panes[3]
-assert_equal(status ~= nil, true, "status pane recreated")
-assert_equal(status.dimensions.viewport_rows, 1, "recreated status pane rows")
-
-main.title = "pwsh.exe"
-update(window, main)
-assert_equal(panes[status.id] ~= nil, true, "MCP title change keeps status pane while Codex process is live")
-assert_equal(#close_commands, 1, "MCP title change does not request pane close")
-
-function main:get_user_vars()
-  return { codex_active = "false" }
-end
-
-update(window, main)
-assert_equal(panes[status.id] ~= nil, true, "inactive status close remains asynchronous")
-assert_equal(#close_commands, 2, "confirmed inactive session queues exact close")
-assert_equal(close_commands[2][5], tostring(status.id), "inactive close targets status pane")
-local tab_state = wezterm.GLOBAL.codex_statusline_state.tabs["7:99"]
-assert_equal(tab_state.status_pane_id, status.id, "pending close retains status pane id")
-
-update(window, main)
-assert_equal(#close_commands, 2, "inactive close is not queued repeatedly")
-assert_equal(panes[main.id] ~= nil, true, "inactive cleanup never removes main pane")
-
-panes[status.id] = nil
-update(window, main)
-assert_equal(panes[status.id], nil, "status pane closes after asynchronous completion")
-assert_equal(tab_state.status_pane_id, nil, "status pane id clears after confirmed close")
-
-tab_state.status_pane_id = main.id
-tab_state.main_pane_id = main.id
-update(window, main)
-assert_equal(#close_commands, 2, "main pane id is never passed to kill-pane")
-assert_equal(panes[main.id] ~= nil, true, "main pane survives corrupted status state")
-assert_equal(tab_state.status_pane_id, nil, "corrupted status reference is discarded")
-
-print("statusline lifecycle tests passed")

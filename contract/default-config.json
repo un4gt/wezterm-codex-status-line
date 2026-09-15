@@ -1,0 +1,180 @@
+{
+  "schema": 1,
+  "options": {
+    "debug": false,
+    "label": "CODEX",
+    "codex_home": "",
+    "log": {
+      "enabled": true,
+      "marker": "CODEX_STATUSLINE_LOADED"
+    },
+    "compat": {
+      "update_right_status": false
+    },
+    "codex_config": {
+      "enabled": true,
+      "path": "",
+      "cache_ttl_seconds": 5
+    },
+    "bottom_pane": {
+      "enabled": true,
+      "rows": 1,
+      "layout_debounce_ms": 1000,
+      "close_grace_seconds": 2,
+      "prevent_focus": true
+    },
+    "sessions": {
+      "enabled": true,
+      "binding_mode": "auto",
+      "bridge_dir": "",
+      "allow_fallback_latest": false,
+      "resume_fallback_enabled": true,
+      "resume_fallback_max_age_seconds": 30,
+      "resume_fallback_clock_skew_seconds": 5,
+      "resume_fallback_scan_ttl_seconds": 2,
+      "cache_ttl_seconds": 5,
+      "full_scan_ttl_seconds": 300,
+      "tail_ttl_seconds": 1,
+      "open_fail_clear_seconds": 30,
+      "initial_seek_bytes": 131072,
+      "activity_seek_bytes": 65536,
+      "activity_max_seek_bytes": 8388608,
+      "max_meta_lines": 40,
+      "max_tail_lines": 200
+    },
+    "git": {
+      "enabled": true,
+      "cache_ttl_seconds": 5
+    },
+    "title_bridge": {
+      "enabled": true,
+      "app_name": "codex"
+    },
+    "user_vars": {
+      "model": ["codex_model", "CODEX_MODEL"],
+      "thinking": ["codex_thinking", "CODEX_THINKING", "codex_reasoning", "CODEX_REASONING"],
+      "provider": ["codex_provider", "CODEX_PROVIDER", "codex_model_provider", "CODEX_MODEL_PROVIDER"],
+      "active": ["codex_active", "CODEX_ACTIVE"]
+    },
+    "process_match": {
+      "enabled": true,
+      "names": ["codex", "codex.exe"],
+      "argv_markers": ["/@openai/codex/bin/codex.js"],
+      "terminal_names": [
+        "wezterm",
+        "wezterm.exe",
+        "wezterm-gui",
+        "wezterm-gui.exe",
+        "wezterm-mux-server-impl",
+        "wezterm-mux-server-impl.exe"
+      ],
+      "grace_seconds": 5,
+      "tree_cache_ttl_seconds": 1
+    },
+    "activity": {
+      "labels": {
+        "plan": "PLAN",
+        "review": "REVIEW",
+        "goal_active": "GOAL",
+        "goal_paused": "GOAL PAUSED",
+        "goal_blocked": "GOAL BLOCKED",
+        "goal_usage_limited": "GOAL LIMITED",
+        "goal_budget_limited": "GOAL BUDGET",
+        "goal_complete": "GOAL DONE"
+      }
+    },
+    "icon": {
+      "text": ""
+    },
+    "pricing": {
+      "models": {}
+    },
+    "render": {
+      "powerline": true,
+      "plain_fallback": true,
+      "model_display": "name",
+      "segment_order": [
+        "label",
+        "model",
+        "reasoning",
+        "activity",
+        "provider",
+        "personality",
+        "service_tier",
+        "cwd",
+        "project",
+        "git",
+        "permissions",
+        "approval",
+        "context",
+        "context_used",
+        "context_window",
+        "used_tokens",
+        "cache_rate",
+        "cost",
+        "input_tokens",
+        "cached_tokens",
+        "output_tokens",
+        "reasoning_tokens",
+        "thread_id",
+        "task_progress",
+        "codex_version",
+        "icon"
+      ],
+      "disabled_segments": [
+        "personality",
+        "service_tier",
+        "project",
+        "permissions",
+        "approval",
+        "context_used",
+        "context_window",
+        "input_tokens",
+        "cached_tokens",
+        "output_tokens",
+        "reasoning_tokens",
+        "thread_id",
+        "task_progress",
+        "codex_version"
+      ]
+    },
+    "theme": {
+      "bg": "#11151a",
+      "fg": "#d5dbe3",
+      "dim": "#82909f",
+      "segments": {
+        "label": { "bg": "#1d4ed8", "fg": "#ffffff" },
+        "model": { "bg": "#11151a", "fg": "#d5dbe3" },
+        "reasoning": { "bg": "#11151a", "fg": "#fbbf24" },
+        "activity": { "bg": "#6d28d9", "fg": "#ffffff" },
+        "provider": { "bg": "#11151a", "fg": "#aab2bf" },
+        "personality": { "bg": "#11151a", "fg": "#c4b5fd" },
+        "service_tier": { "bg": "#11151a", "fg": "#f0abfc" },
+        "cwd": { "bg": "#11151a", "fg": "#d5dbe3" },
+        "project": { "bg": "#11151a", "fg": "#93c5fd" },
+        "git": { "bg": "#11151a", "fg": "#4ade80" },
+        "permissions": { "bg": "#11151a", "fg": "#fca5a5" },
+        "approval": { "bg": "#11151a", "fg": "#fdba74" },
+        "context": { "bg": "#11151a", "fg": "#7dd3fc" },
+        "context_used": { "bg": "#11151a", "fg": "#67e8f9" },
+        "context_window": { "bg": "#11151a", "fg": "#a5b4fc" },
+        "used_tokens": { "bg": "#11151a", "fg": "#d5dbe3" },
+        "cache_rate": { "bg": "#11151a", "fg": "#67e8f9" },
+        "cost": { "bg": "#11151a", "fg": "#fbbf24" },
+        "input_tokens": { "bg": "#11151a", "fg": "#86efac" },
+        "cached_tokens": { "bg": "#11151a", "fg": "#94a3b8" },
+        "output_tokens": { "bg": "#11151a", "fg": "#fde68a" },
+        "reasoning_tokens": { "bg": "#11151a", "fg": "#f0abfc" },
+        "thread_id": { "bg": "#11151a", "fg": "#94a3b8" },
+        "task_progress": { "bg": "#11151a", "fg": "#5eead4" },
+        "codex_version": { "bg": "#11151a", "fg": "#aab2bf" },
+        "icon": { "bg": "#11151a", "fg": "#58d6c5" }
+      },
+      "glyphs": {
+        "sep": "",
+        "branch": "",
+        "folder": ""
+      }
+    }
+  }
+}

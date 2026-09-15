@@ -1,0 +1,4 @@
+/src/wezterm_codex_status_line/assets
+/dist
+/*.egg-info
+/.venv

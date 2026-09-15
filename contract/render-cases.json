@@ -1,0 +1,198 @@
+[
+  {
+    "name": "wide-one-row",
+    "columns": 140,
+    "patch": {},
+    "expected": {
+      "layout": "wide",
+      "lines": [
+        [
+          ["label", "CODEX"],
+          ["model", "gpt-5.6-sol"],
+          ["reasoning", "high"],
+          ["provider", "p:openai"],
+          ["cwd", "~/src/app"],
+          ["git", "main"],
+          ["context", "Ctx ███████░░░ 72% left"],
+          ["used_tokens", "↑10M ↓204K"],
+          ["cache_rate", "Cache 60%"],
+          ["cost", "Cost ~$22.48"],
+          ["icon", ""],
+          ["version", "$version"]
+        ]
+      ]
+    }
+  },
+  {
+    "name": "narrow-one-row",
+    "columns": 75,
+    "patch": {},
+    "expected": {
+      "layout": "narrow",
+      "lines": [
+        [
+          ["label", "CODEX"],
+          ["model", "gpt-5.6-sol"],
+          ["reasoning", "high"],
+          ["git", "main"],
+          ["context", "Ctx 72% left"],
+          ["icon", ""],
+          ["version", "$version"]
+        ]
+      ]
+    }
+  },
+  {
+    "name": "plan-with-icons-at-133-columns",
+    "columns": 133,
+    "patch": { "modelDisplay": "icon_name" },
+    "state": { "activity": { "mode": "plan", "review": false } },
+    "expected": {
+      "layout": "wide",
+      "lines": [[
+        ["label", "CODEX"], ["model", "☀ gpt-5.6-sol"], ["reasoning", "high"],
+        ["activity", "PLAN"], ["git", "main"], ["context", "Ctx ███████░░░ 72% left"],
+        ["used_tokens", "↑10M ↓204K"], ["cache_rate", "Cache 60%"], ["cost", "Cost ~$22.48"],
+        ["icon", ""], ["version", "$version"]
+      ]]
+    }
+  },
+  {
+    "name": "tiny-priority",
+    "columns": 50,
+    "patch": {},
+    "expected": {
+      "layout": "tiny",
+      "lines": [
+        [
+          ["label", "CODEX"],
+          ["model", "gpt-5.6-sol"],
+          ["context", "Ctx 72%"],
+          ["icon", ""],
+          ["version", "$version"]
+        ]
+      ]
+    }
+  },
+  {
+    "name": "wide-two-rows",
+    "columns": 140,
+    "patch": { "rows": 2, "disabledAdd": ["provider"] },
+    "expected": {
+      "layout": "wide",
+      "lines": [
+        [
+          ["label", "CODEX"],
+          ["model", "gpt-5.6-sol"],
+          ["reasoning", "high"],
+          ["cwd", "~/src/app"],
+          ["git", "main"],
+          ["icon", ""],
+          ["version", "$version"]
+        ],
+        [
+          ["context", "Ctx ███████░░░ 72% left"],
+          ["used_tokens", "↑10M ↓204K"],
+          ["cache_rate", "Cache 60%"],
+          ["cost", "Cost ~$22.48"]
+        ]
+      ]
+    }
+  },
+  {
+    "name": "goal-state",
+    "columns": 180,
+    "patch": {},
+    "state": {
+      "activity": {
+        "mode": "default",
+        "review": false,
+        "goal": { "status": "blocked" }
+      }
+    },
+    "expected": {
+      "layout": "wide",
+      "lines": [
+        [
+          ["label", "CODEX"],
+          ["model", "gpt-5.6-sol"],
+          ["reasoning", "high"],
+          ["activity", "GOAL BLOCKED"],
+          ["provider", "p:openai"],
+          ["cwd", "~/src/app"],
+          ["git", "main"],
+          ["context", "Ctx ███████░░░ 72% left"],
+          ["used_tokens", "↑10M ↓204K"],
+          ["cache_rate", "Cache 60%"],
+          ["cost", "Cost ~$22.48"],
+          ["icon", ""],
+          ["version", "$version"]
+        ]
+      ]
+    }
+  },
+  {
+    "name": "plan-over-goal",
+    "columns": 180,
+    "patch": {},
+    "state": {
+      "activity": {
+        "mode": "plan",
+        "review": false,
+        "goal": { "status": "blocked" }
+      }
+    },
+    "expected": {
+      "layout": "wide",
+      "lines": [
+        [
+          ["label", "CODEX"],
+          ["model", "gpt-5.6-sol"],
+          ["reasoning", "high"],
+          ["activity", "PLAN"],
+          ["provider", "p:openai"],
+          ["cwd", "~/src/app"],
+          ["git", "main"],
+          ["context", "Ctx ███████░░░ 72% left"],
+          ["used_tokens", "↑10M ↓204K"],
+          ["cache_rate", "Cache 60%"],
+          ["cost", "Cost ~$22.48"],
+          ["icon", ""],
+          ["version", "$version"]
+        ]
+      ]
+    }
+  },
+  {
+    "name": "review-over-plan-and-goal",
+    "columns": 180,
+    "patch": {},
+    "state": {
+      "activity": {
+        "mode": "plan",
+        "review": true,
+        "goal": { "status": "blocked" }
+      }
+    },
+    "expected": {
+      "layout": "wide",
+      "lines": [
+        [
+          ["label", "CODEX"],
+          ["model", "gpt-5.6-sol"],
+          ["reasoning", "high"],
+          ["activity", "REVIEW"],
+          ["provider", "p:openai"],
+          ["cwd", "~/src/app"],
+          ["git", "main"],
+          ["context", "Ctx ███████░░░ 72% left"],
+          ["used_tokens", "↑10M ↓204K"],
+          ["cache_rate", "Cache 60%"],
+          ["cost", "Cost ~$22.48"],
+          ["icon", ""],
+          ["version", "$version"]
+        ]
+      ]
+    }
+  }
+]

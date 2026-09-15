@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wezterm-codex-status-line"
+version = "0.1.0"
+description = "Install and configure the WezTerm Codex status line"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{name = "un4gt"}]
+dependencies = [
+  "jsonschema>=4.23,<5",
+  "questionary>=2.1,<3",
+  "typer>=0.16,<1"
+]
+
+[project.urls]
+Documentation = "https://un4gt.github.io/wezterm-codex-status-line/"
+Repository = "https://github.com/un4gt/wezterm-codex-status-line"
+
+[project.scripts]
+wezterm-codex-status-line = "wezterm_codex_status_line.cli:main"
+
+[tool.hatch.build]
+artifacts = ["/src/wezterm_codex_status_line/assets/**"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wezterm_codex_status_line"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "README.md", "pyproject.toml"]

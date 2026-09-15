@@ -379,6 +379,8 @@ class BridgeTests(unittest.TestCase):
                 "-File",
                 str(INSTALLER),
                 "-Install",
+                "-UserHome",
+                str(root),
                 "-CodexHome",
                 str(home),
                 "-WezTermModuleDir",
@@ -411,11 +413,21 @@ class BridgeTests(unittest.TestCase):
             manifest = json.loads(
                 (home / "wezterm-statusline" / "bridge.json").read_text(encoding="utf-8-sig")
             )
-            self.assertEqual(manifest["schema"], 3)
+            self.assertEqual(manifest["schema"], 4)
+            self.assertEqual(manifest["package"]["version"], "0.1.0")
             self.assertEqual(Path(manifest["wezterm_module_dir"]), module_dir)
+            self.assertTrue((bridge_bin / "codex_statusline_bridge.js").exists())
 
             uninstall = command.copy()
             uninstall[uninstall.index("-Install")] = "-Uninstall"
+            active_config = root / ".wezterm.lua"
+            active_config.write_text('require("codex_statusline").setup()\n', encoding="utf-8")
+            blocked = subprocess.run(uninstall, capture_output=True, text=True)
+            self.assertEqual(blocked.returncode, 3, blocked.stdout + blocked.stderr)
+            self.assertTrue((module_dir / "codex_statusline.lua").exists())
+            self.assertTrue((home / "wezterm-statusline" / "bridge.json").exists())
+            self.assertTrue((home / "hooks.json").exists())
+            active_config.unlink()
             subprocess.run(uninstall, check=True, capture_output=True, text=True)
             self.assertFalse((module_dir / "codex_statusline.lua").exists())
             self.assertFalse((module_dir / "codex_statusline_core.lua").exists())
@@ -450,6 +462,8 @@ class BridgeTests(unittest.TestCase):
                 str(INSTALLER),
                 "-Install",
                 "-EnableCodexTitleBridge",
+                "-UserHome",
+                str(root),
                 "-CodexHome",
                 str(home),
                 "-WezTermModuleDir",
@@ -505,6 +519,8 @@ class BridgeTests(unittest.TestCase):
                 str(INSTALLER),
                 "-Install",
                 "-EnableCodexTitleBridge",
+                "-UserHome",
+                str(root),
                 "-CodexHome",
                 str(home),
                 "-WezTermModuleDir",
@@ -549,6 +565,8 @@ class BridgeTests(unittest.TestCase):
                 str(INSTALLER),
                 "-Install",
                 "-EnableCodexTitleBridge",
+                "-UserHome",
+                str(root),
                 "-CodexHome",
                 str(home),
                 "-WezTermModuleDir",
@@ -608,6 +626,13 @@ class BridgeTests(unittest.TestCase):
                 )
                 self.assertTrue((module_dir / "codex_statusline.lua").exists())
                 self.assertTrue((module_dir / "codex_statusline_core.lua").exists())
+                for module in (ROOT / "codex_statusline").rglob("*.lua"):
+                    relative = module.relative_to(ROOT)
+                    self.assertEqual((module_dir / relative).read_bytes(), module.read_bytes())
+                    self.assertLess(
+                        server.requested_paths.index("/" + relative.as_posix()),
+                        server.requested_paths.index("/codex_statusline.lua"),
+                    )
                 self.assertTrue(
                     (home / "wezterm-statusline" / "bin" / "codex_statusline_bridge.ps1").exists()
                 )
@@ -627,7 +652,7 @@ class BridgeTests(unittest.TestCase):
         assert shell is not None
         handler = partial(QuietHttpHandler, directory=str(ROOT))
         server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
-        server.failure_path = "/codex_statusline.lua"
+        server.failure_path = "/codex_statusline/layout.lua"
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         try:

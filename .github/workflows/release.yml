@@ -1,0 +1,83 @@
+name: Release packages
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/npm/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.17"
+      - name: Verify tag and package versions
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          test "$version" = "$(node -p "require('./packages/npm/package.json').version")"
+          test "$version" = "$(grep '^version = ' packages/python/pyproject.toml | cut -d '"' -f 2)"
+      - run: node scripts/sync-package-assets.mjs
+      - working-directory: packages/npm
+        run: npm ci && npm pack
+      - working-directory: packages/python
+        run: uv build
+      - name: Verify package assets
+        run: python3 scripts/verify-package-assets.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: |
+            packages/npm/*.tgz
+            packages/python/dist/*
+
+  publish-npm:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: dist
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: npm publish dist/npm/*.tgz --access public --provenance
+
+  publish-pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/python/dist/
+
+  github-release:
+    needs: [publish-npm, publish-pypi]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: dist/**/*
