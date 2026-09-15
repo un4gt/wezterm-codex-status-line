@@ -9,17 +9,17 @@ description: 从 doctor 开始排查安装、模块、Hook、等待状态、字�
 ## 先运行 `doctor`
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest doctor
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line doctor
 ```
 
 ```bash
-uvx --refresh wezterm-codex-status-line doctor
+uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line doctor
 ```
 
 `MISSING` 表示对应检查未通过，不一定表示文件真的不存在。例如 `config` 也会在 JSON 无效时显示 `MISSING`。使用全局 `--json` 可获得检查名、警告与实际路径：
 
 ```bash
-uvx --refresh wezterm-codex-status-line --json doctor
+uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line --json doctor
 ```
 
 ## `module 'codex_statusline' not found`
@@ -43,7 +43,7 @@ require("codex_statusline").setup()
 入口存在但同目录 core 或 `codex_statusline/` 子模块缺失、损坏或版本不一致。不要单独下载 Lua 入口；运行 `update` 会从同一个包版本完整暂存，先安装全部依赖，最后替换入口。
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest update
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line update
 ```
 
 更新后再次运行 `doctor`，确认 `lua_entry`、`lua_core` 与 `asset_integrity` 都为 `OK`。
@@ -105,7 +105,7 @@ resume 的新 `SessionStart` mapping 可能在第一次 turn 开始时才写入�
 - 关闭 Powerline，使用纯文本：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest configure --no-powerline
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure --no-powerline
 ```
 
 `plain_fallback = true` 只有在 `powerline = false` 时生效，不会自动识别缺字形。
@@ -151,7 +151,7 @@ python scripts/analyze_lifecycle_log.py
 使用 CLI 校验完整文件，不直接覆盖现有配置：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest configure --from .\candidate.json --dry-run
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure --from .\candidate.json --dry-run
 ```
 
 常见错误包括缺少必需对象、未知键、颜色不是 `#RRGGBB`、segment 重复，以及 `segment_order` 为空。

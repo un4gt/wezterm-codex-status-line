@@ -3,6 +3,12 @@ name: Release packages
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      publish_registries:
+        description: "Publish the selected version tag to npm and PyPI (requires trusted publishers)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -29,9 +35,11 @@ jobs:
       - name: Verify tag and package versions
         shell: bash
         run: |
+          [[ "$GITHUB_REF" == refs/tags/v* ]] || { echo "Select a version tag, such as v0.1.0, to release."; exit 1; }
           version="${GITHUB_REF_NAME#v}"
           test "$version" = "$(node -p "require('./packages/npm/package.json').version")"
           test "$version" = "$(grep '^version = ' packages/python/pyproject.toml | cut -d '"' -f 2)"
+          test -f "release-notes/${GITHUB_REF_NAME}.md"
       - run: node scripts/sync-package-assets.mjs
       - working-directory: packages/npm
         run: npm ci && npm pack
@@ -39,6 +47,8 @@ jobs:
         run: uv build
       - name: Verify package assets
         run: python3 scripts/verify-package-assets.py
+      - name: Test remote package installation
+        run: python3 scripts/test_remote_packages.py
       - uses: actions/upload-artifact@v4
         with:
           name: release-packages
@@ -47,6 +57,7 @@ jobs:
             packages/python/dist/*
 
   publish-npm:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_registries
     needs: build
     runs-on: ubuntu-latest
     environment: npm
@@ -64,6 +75,7 @@ jobs:
       - run: npm publish dist/npm/*.tgz --access public --provenance
 
   publish-pypi:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_registries
     needs: build
     runs-on: ubuntu-latest
     environment: pypi
@@ -77,9 +89,14 @@ jobs:
           packages-dir: dist/python/dist/
 
   github-release:
-    needs: [publish-npm, publish-pypi]
+    if: >-
+      ${{ always() && !cancelled() && needs.build.result == 'success'
+          && (needs.publish-npm.result == 'success' || needs.publish-npm.result == 'skipped')
+          && (needs.publish-pypi.result == 'success' || needs.publish-pypi.result == 'skipped') }}
+    needs: [build, publish-npm, publish-pypi]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: release-packages
@@ -87,4 +104,11 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: dist/**/*
+          body_path: release-notes/${{ github.ref_name }}.md
+          prerelease: ${{ inputs.publish_registries != true || contains(github.ref_name, '-') }}
+          make_latest: ${{ inputs.publish_registries == true && !contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: true
+          files: |
+            dist/npm/*.tgz
+            dist/python/dist/*.whl
+            dist/python/dist/*.tar.gz

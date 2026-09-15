@@ -8,6 +8,8 @@ description: 检查前置条件，并使用 npx 或 uvx 安装 Lua 模块与 Cod
 
 `npx` 与 `uvx` 提供相同的命令、配置 schema 和安装结果。选择一个入口即可，不需要同时安装两套包。
 
+当前使用 [GitHub v0.1.0 预发布附件](https://github.com/un4gt/wezterm-codex-status-line/releases/tag/v0.1.0) 进行小范围测试，尚未发布到 npm/PyPI。下列命令直接使用远程 tarball 或 wheel，不需要注册表账号或密钥。测试时先使用 `--no-title-bridge`，已知问题见版本说明。
+
 ## 前置条件
 
 | 组件 | 要求 |
@@ -27,13 +29,13 @@ macOS：因缺乏设备，没有在 macOS 实机中测试。Linux：目前缺少
 ## 使用 npx
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest install
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line install --no-title-bridge
 ```
 
 ## 使用 uvx
 
 ```bash
-uvx --refresh wezterm-codex-status-line install
+uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line install --no-title-bridge
 ```
 
 ## Terminal title bridge
@@ -50,13 +52,13 @@ terminal_title = ["app-name", "reasoning", "project-name"]
 脚本或 CI 中应明确选择，避免等待交互输入：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest install --title-bridge
-npx --yes wezterm-codex-status-line@latest install --no-title-bridge
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line install --title-bridge
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line install --no-title-bridge
 ```
 
 ```bash
-uvx --refresh wezterm-codex-status-line install --title-bridge
-uvx --refresh wezterm-codex-status-line install --no-title-bridge
+uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line install --title-bridge
+uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line install --no-title-bridge
 ```
 
 全局 `--yes` 也会选择启用 title bridge，但自动化场景使用语义明确的 `--title-bridge` 或 `--no-title-bridge` 更易审计。

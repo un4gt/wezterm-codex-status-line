@@ -8,14 +8,14 @@ description: 更新同版本资源，验证结果，并按安全顺序卸载状�
 
 ## 更新
 
-不需要先卸载。使用原入口运行最新包的 `update`：
+不需要先卸载。使用原入口运行目标版本的 `update`；下面的远程地址固定为测试版 `v0.1.0`，后续升级时使用新版本提供的地址：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest update
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line update
 ```
 
 ```bash
-uvx --refresh wezterm-codex-status-line update
+uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line update
 ```
 
 更新会替换包内资源，保留 `codex_statusline_config.json`、Hook 中其他 handler，以及 manifest 已记录的 terminal title 恢复信息。CLI 不会主动 reload WezTerm；更新后在合适的时间新开窗口或手动 reload。
@@ -25,7 +25,7 @@ uvx --refresh wezterm-codex-status-line update
 更新后运行：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest doctor
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line doctor
 ```
 
 ## 安全卸载
@@ -39,13 +39,13 @@ require("codex_statusline").setup()
 reload WezTerm 配置后，再执行：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest uninstall
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line uninstall
 ```
 
 或：
 
 ```bash
-uvx --refresh wezterm-codex-status-line uninstall
+uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line uninstall
 ```
 
 若 CLI 仍在 `~/.wezterm.lua` 或 `~/.config/wezterm/wezterm.lua` 中检测到 `require("codex_statusline")`，会在恢复 title、修改 Hook 或删除文件之前以退出码 `3` 拒绝执行。此检查没有强制绕过选项。
@@ -63,13 +63,13 @@ uvx --refresh wezterm-codex-status-line uninstall
 `install`、`configure`、`update` 和 `uninstall` 支持 `--dry-run`。预演只报告计划结果，不写文件：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest update --dry-run
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line update --dry-run
 ```
 
 自动化场景可增加全局 `--json`。为兼容 `uvx` 入口，全局参数统一写在子命令之前：
 
 ```bash
-uvx --refresh wezterm-codex-status-line --json doctor
+uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line --json doctor
 ```
 
 | 退出码 | 含义 |

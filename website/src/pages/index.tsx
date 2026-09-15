@@ -23,8 +23,8 @@ import HomepageFeatures from '@site/src/components/HomepageFeatures';
 
 import styles from './index.module.css';
 
-const npxInstallCommand = 'npx --yes wezterm-codex-status-line@latest install';
-const uvxInstallCommand = 'uvx --refresh wezterm-codex-status-line install';
+const npxInstallCommand = 'npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line install --no-title-bridge';
+const uvxInstallCommand = 'uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line install --no-title-bridge';
 
 const documentRoutes = [
   {

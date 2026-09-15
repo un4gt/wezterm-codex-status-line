@@ -32,17 +32,17 @@ npm run start
 也可以通过安装包启动终端配置向导：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest configure
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure
 ```
 
 ```bash
-uvx --refresh wezterm-codex-status-line configure
+uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line configure
 ```
 
 从网页下载 JSON 后导入：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest configure --from .\codex_statusline_config.json
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure --from .\codex_statusline_config.json
 ```
 
 CLI 与网页会拒绝缺少必需字段、未知字段、重复或未知 segment，以及不符合 `#RRGGBB` 的颜色。机器可读定义见 [config.schema.json](https://un4gt.github.io/wezterm-codex-status-line/config.schema.json)。
@@ -219,7 +219,7 @@ require("codex_statusline").setup({
 ## 非交互 CLI 示例
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest configure `
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure `
   --label "CODEX" `
   --rows 1 `
   --binding-mode auto `

@@ -136,7 +136,7 @@ remaining        = round((effective_window - used) / effective_window × 100)
 `render.powerline = true` 使用 Powerline 分隔符以及 Git/目录 glyph。模块无法检测当前字体是否包含这些字形。字体不兼容时明确关闭：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest configure --no-powerline
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure --no-powerline
 ```
 
 此时 `render.plain_fallback = true` 使用双空格分隔的纯文本。若字体也不支持默认项目图标，可将 `icon.text` 改为 ASCII 回退 `>_`。

@@ -60,13 +60,13 @@ require("codex_statusline").setup()
 2. 运行安装诊断：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest doctor
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line doctor
 ```
 
 或：
 
 ```bash
-uvx --refresh wezterm-codex-status-line doctor
+uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line doctor
 ```
 
 3. 在 WezTerm pane 中启动新的 `codex` 会话并发送第一条消息。
@@ -77,11 +77,11 @@ uvx --refresh wezterm-codex-status-line doctor
 ## 配置显示内容
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest configure
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure
 ```
 
 ```bash
-uvx --refresh wezterm-codex-status-line configure
+uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line configure
 ```
 
 也可以在[交互预览](/preview)中调整并下载 JSON，再使用 `configure --from <path>` 导入。所有配置方式见[配置参考](../guides/configuration.md)。

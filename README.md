@@ -19,18 +19,20 @@
 
 ## 安装
 
+当前通过 [GitHub v0.1.0 预发布附件](https://github.com/un4gt/wezterm-codex-status-line/releases/tag/v0.1.0) 进行小范围测试。以下命令直接从固定版本的远程包安装，无需 npm/PyPI 账号。
+
 macOS：因缺乏设备，没有在 macOS 实机中测试。Linux：目前缺少 Wayland/X11 桌面环境，尚未完成真实 GUI 验证。
 
 使用 Node.js：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest install
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line install --no-title-bridge
 ```
 
 使用 uv：
 
 ```bash
-uvx --refresh wezterm-codex-status-line install
+uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line install --no-title-bridge
 ```
 
 交互安装会询问是否启用 terminal title bridge。脚本或 CI 中必须明确传入 `--title-bridge` 或 `--no-title-bridge`。
@@ -61,13 +63,13 @@ return config
 向导可调整布局、segment 顺序、显示项和每个 segment 的颜色；脚本环境可使用等价 flags：
 
 ```powershell
-npx --yes wezterm-codex-status-line@latest configure `
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure `
   --theme-bg "#11151a" `
   --color "label:#1d4ed8:#ffffff" `
   --color "git:#11151a:#4ade80"
 ```
 
-`uvx --refresh wezterm-codex-status-line configure` 接受相同的 `configure` flags。`--color` 可重复，格式固定为 `segment:#RRGGBB:#RRGGBB`。
+`uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line configure` 接受相同的 `configure` flags。`--color` 可重复，格式固定为 `segment:#RRGGBB:#RRGGBB`。
 
 ## 默认显示
 
