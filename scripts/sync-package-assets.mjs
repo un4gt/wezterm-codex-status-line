@@ -31,6 +31,10 @@ const targets = [
   path.join(root, 'packages', 'python', 'src', 'wezterm_codex_status_line', 'assets'),
 ];
 
+for (const name of ['npm', 'python']) {
+  fs.copyFileSync(path.join(root, 'LICENSE'), path.join(root, 'packages', name, 'LICENSE'));
+}
+
 for (const target of targets) {
   fs.rmSync(target, {recursive: true, force: true});
   fs.mkdirSync(path.join(target, 'contract'), {recursive: true});

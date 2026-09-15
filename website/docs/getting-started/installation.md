@@ -22,6 +22,8 @@ description: 检查前置条件，并使用 npx 或 uvx 安装 Lua 模块与 Cod
 
 项目未声明具体的 WezTerm 或 Codex 最低版本号。安装后应运行 `doctor`，并在实际会话中验证所需 API 与 Hook 行为。
 
+macOS：因缺乏设备，没有在 macOS 实机中测试。Linux：目前缺少 Wayland/X11 桌面环境，尚未完成真实 GUI 验证。
+
 ## 使用 npx
 
 ```powershell

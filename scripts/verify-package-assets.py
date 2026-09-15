@@ -44,7 +44,20 @@ def verify(path: Path, members: list[str], read: Callable[[str], bytes]) -> None
         member = next(name for name in members if name.replace("\\", "/").endswith(f"/assets/{required}"))
         if read(member) != (ROOT / required).read_bytes():
             raise SystemExit(f"{path.name}: asset differs from source: {required}")
-    print(f"{path.name}: {len(REQUIRED)} required assets match source")
+    license_suffix, license_depth = (
+        (".dist-info/licenses/LICENSE", 2) if path.suffix == ".whl" else ("/LICENSE", 1)
+    )
+    license_members = [
+        name
+        for name in members
+        if name.replace("\\", "/").endswith(license_suffix)
+        and name.replace("\\", "/").count("/") == license_depth
+    ]
+    if len(license_members) != 1:
+        raise SystemExit(f"{path.name}: expected one distribution LICENSE, found {len(license_members)}")
+    if read(license_members[0]) != (ROOT / "LICENSE").read_bytes():
+        raise SystemExit(f"{path.name}: LICENSE differs from source")
+    print(f"{path.name}: {len(REQUIRED)} required assets and MIT LICENSE match source")
 
 
 def main() -> None:

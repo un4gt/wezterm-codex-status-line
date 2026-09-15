@@ -9,6 +9,7 @@ description = "Install and configure the WezTerm Codex status line"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
+license-files = ["LICENSE"]
 authors = [{name = "un4gt"}]
 dependencies = [
   "jsonschema>=4.23,<5",
@@ -24,10 +25,10 @@ Repository = "https://github.com/un4gt/wezterm-codex-status-line"
 wezterm-codex-status-line = "wezterm_codex_status_line.cli:main"
 
 [tool.hatch.build]
-artifacts = ["/src/wezterm_codex_status_line/assets/**"]
+artifacts = ["/src/wezterm_codex_status_line/assets/**", "/LICENSE"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/wezterm_codex_status_line"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src", "README.md", "pyproject.toml"]
+include = ["src", "README.md", "LICENSE", "pyproject.toml"]

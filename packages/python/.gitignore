@@ -1,4 +1,5 @@
 /src/wezterm_codex_status_line/assets
+/LICENSE
 /dist
 /*.egg-info
 /.venv

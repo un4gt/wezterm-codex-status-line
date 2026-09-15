@@ -1,5 +1,7 @@
 # WezTerm Codex Status Line CLI
 
+macOS：因缺乏设备，没有在 macOS 实机中测试。Linux：目前缺少 Wayland/X11 桌面环境，尚未完成真实 GUI 验证。
+
 ```bash
 uvx --refresh wezterm-codex-status-line install
 ```
