@@ -1,99 +1,72 @@
 ---
 sidebar_position: 2
 title: 配置 WezTerm
-description: 在 .wezterm.lua 中加载状态栏模块，并验证安装结果。
+description: 加载状态栏，检查安装并启动第一个 Codex 会话。
 ---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 # 配置 WezTerm
 
-安装器有意不编辑 `.wezterm.lua`。确认两个根 Lua 文件与 `codex_statusline/` 子模块均已安装后，在现有配置中调用一次 `setup()`。
+安装完成后，在 WezTerm 配置中调用一次 `setup()`。
 
-## 最小配置
+## 加载状态栏
 
-```lua title="~/.wezterm.lua"
-local wezterm = require("wezterm")
-local config = wezterm.config_builder()
-
--- 建议每 500 ms 刷新一次；也可以使用你现有的刷新间隔。
-config.status_update_interval = 500
-
-require("codex_statusline").setup()
-
-return config
-```
-
-`setup()` 应在配置构造完成后、最终 `return config` 之前调用。已有的 shell、字体、按键和窗口配置无需改写，例如：
-
-```lua title="~/.wezterm.lua"
-local wezterm = require("wezterm")
-local config = wezterm.config_builder()
-
-config.default_prog = {"pwsh.exe", "-NoLogo"}
-config.enable_scroll_bar = true
-config.font_size = 12
-config.status_update_interval = 500
-
-require("codex_statusline").setup()
-
-return config
-```
-
-## 模块搜索路径
-
-默认安装目录是：
-
-```text
-~/.config/wezterm/
-```
-
-该目录也是默认的 WezTerm 配置目录，因此通常只需要：
+在现有配置的 `return config` 之前加入：
 
 ```lua
+config.status_update_interval = 500
 require("codex_statusline").setup()
 ```
 
-不要 require 临时 clone 目录的绝对路径。目录移动或删除后，绝对路径会使 WezTerm 配置加载失败。使用自定义配置目录时，应在安装命令中同时传入 `--wezterm-module-dir <path>`。
+`status_update_interval` 设置状态更新间隔，单位为毫秒。已有刷新间隔时可以保留原值。
 
-## 加载并检查
+如果还没有 WezTerm 配置文件，可以创建：
 
-1. 新开 WezTerm 窗口，或在方便时由你主动 reload 配置。
-2. 运行安装诊断：
+```lua title="~/.wezterm.lua"
+local wezterm = require("wezterm")
+local config = wezterm.config_builder()
 
-```powershell
+config.status_update_interval = 500
+require("codex_statusline").setup()
+
+return config
+```
+
+默认安装目录 `~/.config/wezterm` 位于 WezTerm 的模块搜索路径中。使用自定义目录时，请确认 `require("codex_statusline")` 能找到该目录下的模块。
+
+## 检查安装
+
+重新加载 WezTerm 配置。Windows 默认快捷键为 `Ctrl+Shift+R`。
+
+然后运行：
+
+<Tabs groupId="installer">
+<TabItem value="npx" label="npx">
+
+```sh
 npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line doctor
 ```
 
-或：
+</TabItem>
+<TabItem value="uvx" label="uvx">
 
-```bash
+```sh
 uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line doctor
 ```
 
-3. 在 WezTerm pane 中启动新的 `codex` 会话并发送第一条消息。
-4. 确认底部状态 pane 出现，并在首个 token 事件后显示 context 和 used tokens。
+</TabItem>
+</Tabs>
 
-`doctor` 检查 manifest、Lua 入口与全部子模块资源哈希、Hook、WezTerm 的 `require()` 和可选配置文件。它不会启动 WezTerm，也不会验证某个正在运行的 Codex 会话。
+检查项显示 `OK` 表示安装文件和配置有效。如果检查失败，按[故障排查](../troubleshooting/common-issues.md)中的步骤处理。
 
-## 配置显示内容
+## 启动 Codex
 
-```powershell
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure
-```
+在 WezTerm 窗格中启动 `codex`，并发送一条消息。状态栏会出现在该窗格下方，Token 用量在 Codex 返回用量数据后显示。
 
-```bash
-uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line configure
-```
+多个 Codex 窗格可以同时显示各自的状态栏。`doctor` 只检查安装与配置；正在运行的会话需要在 WezTerm 中确认。
 
-也可以在[交互预览](/preview)中调整并下载 JSON，再使用 `configure --from <path>` 导入。所有配置方式见[配置参考](../guides/configuration.md)。
+## 调整外观
 
-## 调试加载来源
-
-临时启用：
-
-```lua
-require("codex_statusline").setup({
-  debug = true,
-})
-```
-
-WezTerm 日志中的 `CODEX_STATUSLINE_LOADED` 会显示 module ID 与实际搜索路径。排查完成后关闭 `debug`，避免持续输出状态更新日志。
+打开[交互预览](/preview)选择字段和配色，然后按照[配置状态栏](../guides/configuration.md)导入 JSON。

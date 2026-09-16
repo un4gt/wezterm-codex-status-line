@@ -47,7 +47,7 @@ const config: Config = {
     metadata: [
       {
         name: 'description',
-        content: '为 WezTerm 中的 Codex CLI 提供独立、线程精确绑定的底部状态 pane。',
+        content: '在 WezTerm 中查看 Codex 会话的模型、Git 分支、上下文和 Token 用量。',
       },
       {name: 'theme-color', content: '#0d0f12'},
     ],
@@ -102,7 +102,8 @@ const config: Config = {
           title: '项目导航',
           items: [
             {label: '安装', to: '/docs/getting-started/installation'},
-            {label: '配置参考', to: '/docs/guides/configuration'},
+            {label: '配置指南', to: '/docs/guides/configuration'},
+            {label: '配置选项', to: '/docs/reference/settings'},
             {label: '故障排查', to: '/docs/troubleshooting/common-issues'},
             {label: 'GitHub 仓库', href: repositoryUrl},
             {label: '问题反馈', href: `${repositoryUrl}/issues`},

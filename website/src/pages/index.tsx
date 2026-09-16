@@ -29,43 +29,43 @@ const uvxInstallCommand = 'uvx --from https://github.com/un4gt/wezterm-codex-sta
 const documentRoutes = [
   {
     label: '安装指南',
-    title: '安装文件与 Hook',
-    description: '通过 npx / uvx 一键部署 Lua 模块与 SessionStart hook。',
+    title: '安装状态栏',
+    description: '使用 npx 或 uvx 安装，查看平台要求。',
     to: '/docs/getting-started/installation',
     Icon: Download,
   },
   {
-    label: '接入配置',
+    label: '加载状态栏',
     title: '配置 .wezterm.lua',
-    description: '手动调用模块入口，完整保留现有 WezTerm 配置。',
+    description: '在现有配置中加载状态栏，并检查安装结果。',
     to: '/docs/getting-started/wezterm-config',
     Icon: Braces,
   },
   {
-    label: '显示策略',
+    label: '自定义显示',
     title: '个性化配置',
-    description: '调整底部行数、字段顺序、会话绑定方式与配色。',
+    description: '调整字段、颜色和行数，导入网页下载的配置。',
     to: '/docs/guides/configuration',
     Icon: FileSliders,
   },
   {
     label: '版本维护',
     title: '更新与卸载',
-    description: '覆盖升级最新模块，或精确清理已安装的 hook 与文件。',
+    description: '更新插件并保留配置，或按步骤卸载。',
     to: '/docs/getting-started/update-uninstall',
     Icon: RefreshCw,
   },
   {
     label: '问题排查',
     title: '常见问题与诊断',
-    description: '按现象定位模块缺失、Hook 报错与 pane 生命周期问题。',
+    description: '处理安装失败、等待状态、配置和显示问题。',
     to: '/docs/troubleshooting/common-issues',
     Icon: Wrench,
   },
   {
     label: '命令参考',
-    title: 'CLI 命令与参数',
-    description: '核对安装、配置、预览、诊断、更新与卸载参数。',
+    title: '命令行参考',
+    description: '查询命令、选项、输出格式和退出码。',
     to: '/docs/guides/cli-reference',
     Icon: ListTree,
   },
@@ -128,27 +128,27 @@ function HomepageHeader(): ReactNode {
         <div className={styles.metaLine}>
           <span className={styles.liveState}>
             <span aria-hidden="true" />
-            ACTIVE
+            v0.1.0
           </span>
           <span className={styles.metaDivider} />
           <span className={styles.metaTag}>WezTerm</span>
           <span className={styles.metaDot}>·</span>
           <span className={styles.metaTag}>Codex CLI</span>
           <span className={styles.metaDot}>·</span>
-          <span className={styles.metaTag}>Windows / macOS / Linux</span>
+          <Link className={styles.metaTag} to="/docs/getting-started/installation#要求">平台要求</Link>
         </div>
 
         <div className={styles.titleRow}>
           <div className={styles.titleCopy}>
             <Heading as="h1">WezTerm Codex Status Line</Heading>
             <p>
-              在独立底部 pane 中显示当前 Codex 线程的模型、推理级别、Git 分支与上下文用量。
+              在 Codex 窗格下方查看模型、推理强度、Git 分支、上下文和 Token 用量。
             </p>
           </div>
           <div className={styles.actions}>
             <Link className={styles.primaryAction} to="/docs/getting-started/installation">
               <BookOpen aria-hidden="true" size={15} />
-              阅读文档
+              开始使用
             </Link>
             <Link className={styles.secondaryAction} href="https://github.com/un4gt/wezterm-codex-status-line">
               <Code2 aria-hidden="true" size={15} />
@@ -167,15 +167,15 @@ export default function Home(): ReactNode {
   return (
     <Layout
       title="WezTerm 中的 Codex 底部状态栏"
-      description="线程精确绑定、安全回收、可响应终端宽度的 WezTerm Codex 状态栏。">
+      description="为每个 Codex 窗格显示独立状态栏，自定义字段、颜色和布局。">
       <HomepageHeader />
       <main className={styles.main}>
         <section className={styles.install} aria-labelledby="install-heading">
           <div className={`container ${styles.installGrid}`}>
             <div className={styles.sectionIntro}>
               <span className={styles.sectionIndex}>01 / INSTALL</span>
-              <Heading as="h2" id="install-heading">快速安装与部署</Heading>
-              <p>支持 npx 与 uvx 安装；安装器不会修改 <code>.wezterm.lua</code>，接入步骤由用户明确完成。</p>
+              <Heading as="h2" id="install-heading">安装状态栏</Heading>
+              <p>选择一个安装命令，再按安装指南将状态栏加入 WezTerm 配置。</p>
               <Link className={styles.introLink} to="/docs/getting-started/installation">
                 查看详细安装步骤 <ArrowRight aria-hidden="true" size={14} />
               </Link>
@@ -194,9 +194,9 @@ export default function Home(): ReactNode {
             <div className={styles.sectionHeading}>
               <div>
                 <span className={styles.sectionIndex}>02 / DOCUMENTATION</span>
-                <Heading as="h2" id="routes-heading">从当前任务开始</Heading>
+                <Heading as="h2" id="routes-heading">使用指南</Heading>
               </div>
-              <p>按使用阶段快速查阅所需的指南与参考手册。</p>
+              <p>安装、配置、更新和问题排查。</p>
             </div>
             <div className={styles.routeGrid}>
               {documentRoutes.map(({label, title, description, to, Icon}, index) => (

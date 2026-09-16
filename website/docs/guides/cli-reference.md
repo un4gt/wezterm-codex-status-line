@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
-title: CLI 命令参考
+title: 命令行参考
 description: 查看 npx 与 uvx 入口的命令、参数、输出和退出码。
 ---
 
-# CLI 命令参考
+# 命令行参考
 
-两个包入口暴露相同的六个命令：`install`、`configure`、`preview`、`doctor`、`update` 与 `uninstall`。
+npx 和 uvx 入口提供相同的六个命令：`install`、`configure`、`preview`、`doctor`、`update` 与 `uninstall`。
 
 ## 调用格式
 
@@ -14,7 +14,7 @@ description: 查看 npx 与 uvx 入口的命令、参数、输出和退出码。
 wezterm-codex-status-line [全局选项] <命令> [命令选项]
 ```
 
-为兼容 Python/Typer 入口，全局选项统一放在命令之前：
+全局选项放在子命令之前。例如，输出 JSON 格式的检查结果：
 
 ```bash
 uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line --json doctor
@@ -32,9 +32,9 @@ npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/
 | --- | --- |
 | `--codex-home <path>` | 覆盖 `$CODEX_HOME` 或 `~/.codex` |
 | `--wezterm-module-dir <path>` | 覆盖 `~/.config/wezterm` 模块目录 |
-| `--config-file <path>` | 覆盖 CLI 读写的 schema 1 配置路径 |
-| `--json` | 输出 schema 1 的机器可读命令结果 |
-| `--no-color` | 关闭 CLI 预览中的 ANSI 色彩 |
+| `--config-file <path>` | 指定 CLI 读写的配置文件 |
+| `--json` | 以 JSON 输出命令结果 |
+| `--no-color` | 关闭终端预览颜色 |
 | `--yes` | 跳过 CLI 交互确认；`install` 时等价于选择启用 title bridge |
 | `--version` | 输出包版本 |
 
@@ -48,33 +48,33 @@ npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/
 
 ## `install`
 
-安装 Lua 模块、bridge、Hook 与 manifest。
+安装状态栏文件并添加 Codex 会话启动 hook。安装步骤见[安装指南](../getting-started/installation.md)。
 
 | 选项 | 作用 |
 | --- | --- |
 | `--title-bridge` | 配置 Codex terminal title |
 | `--no-title-bridge` | 不配置 terminal title |
-| `--dry-run` | 不写文件，只返回预演结果 |
+| `--dry-run` | 显示操作结果，不写入文件 |
 
-非交互运行必须提供 title 选择，或使用全局 `--yes`。
+脚本中运行安装命令时，使用 `--title-bridge` 或 `--no-title-bridge` 指定标题设置。macOS 和 Linux 使用 `--no-title-bridge`。
 
 ## `configure`
 
-读取现有配置或默认配置，应用参数，校验 schema，显示预览并原子写入 JSON。
+修改显示配置并输出预览。不带选项时，在交互式终端中打开配置向导；使用 `--from` 导入完整 JSON。
 
 | 选项 | 作用 |
 | --- | --- |
-| `--from <path>` | 导入完整 schema 1 JSON |
+| `--from <path>` | 导入完整配置 JSON |
 | `--label <text>` | 设置 1–24 字符标签 |
-| `--rows 1\|2` | 设置状态 pane 行数 |
-| `--binding-mode auto\|hook\|heuristic` | 设置 thread 绑定模式 |
-| `--segments <ids>` | 设置逗号分隔的 segment 顺序 |
+| `--rows 1\|2` | 设置状态栏行数 |
+| `--binding-mode auto\|hook\|heuristic` | 设置会话绑定模式 |
+| `--segments <ids>` | 设置字段顺序，以逗号分隔 |
 | `--disable <ids>` | 设置逗号分隔的隐藏列表；空字符串清空列表 |
 | `--powerline` / `--no-powerline` | 开关 Powerline 渲染 |
 | `--theme-bg <#RRGGBB>` | 设置默认背景色 |
 | `--theme-fg <#RRGGBB>` | 设置默认前景色 |
 | `--theme-dim <#RRGGBB>` | 设置弱化文字色 |
-| `--color <id:bg:fg>` | 设置一个 segment 的背景色与前景色，可重复 |
+| `--color <id:bg:fg>` | 设置一个字段的背景色与前景色，可重复 |
 | `--width <columns>` | 设置 CLI 预览宽度，默认 120 |
 | `--dry-run` | 校验并预览，但不写配置 |
 
@@ -87,22 +87,22 @@ npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/
 | 选项 | 作用 |
 | --- | --- |
 | `--width <columns>` | 模拟终端列数；默认使用输出终端宽度或 120 |
-| `--state <path>` | 读取自定义模拟状态 JSON，主要用于开发与测试 |
+| `--state <path>` | 读取自定义预览数据 JSON |
 
 ## `doctor`
 
-只读检查以下项目：
+检查安装与配置，输出每项结果：
 
 | 检查项 | 内容 |
 | --- | --- |
 | `manifest` | `bridge.json` 是否存在 |
-| `lua_entry` / `lua_core` | 两个 Lua 模块是否存在 |
-| `asset_integrity` | 已安装资源是否与 manifest SHA-256 一致 |
-| `hooks` | `hooks.json` 是否包含本项目 bridge handler |
+| `lua_entry` / `lua_core` | 状态栏模块是否存在 |
+| `asset_integrity` | 安装文件是否缺失或被修改 |
+| `hooks` | `hooks.json` 是否包含本项目的会话启动 hook |
 | `wezterm_require` | WezTerm 配置是否调用 `require("codex_statusline")` |
-| `config` | 可选 schema 1 配置是否有效 |
+| `config` | 显示配置是否有效 |
 
-`doctor` 不启动 WezTerm，不读取正在运行的 pane，也不验证 Codex 是否会触发 Hook。
+`doctor` 检查本地文件。正在运行的会话是否显示正常，需要在 WezTerm 中确认。
 
 ## `update`
 
@@ -112,18 +112,18 @@ npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/
 | --- | --- |
 | `--title-bridge` | 此前未启用时，配置 terminal title |
 | `--no-title-bridge` | 本次不启用；不会移除已有 title 配置 |
-| `--dry-run` | 不写文件，只返回预演结果 |
+| `--dry-run` | 显示操作结果，不写入文件 |
 
 ## `uninstall`
 
-恢复受管 title 配置、移除本项目 Hook 与包资源。
+移除状态栏文件和会话启动 hook，并按安装记录恢复终端标题。
 
 | 选项 | 作用 |
 | --- | --- |
 | `--purge-config` | 同时删除 `codex_statusline_config.json` |
-| `--dry-run` | 执行安全前置检查，但不写文件 |
+| `--dry-run` | 检查操作条件，不写入文件 |
 
-只要 WezTerm 配置仍调用模块，卸载就会以退出码 `3` 拒绝；没有强制绕过选项。
+卸载前，先从 WezTerm 配置中移除模块引用并重新加载配置。检测到引用时，命令返回退出码 `3`。详见[卸载步骤](../getting-started/update-uninstall.md#卸载)。
 
 ## JSON 输出与退出码
 
@@ -134,4 +134,4 @@ JSON 结果包含 `schema`、`command`、`version`、`status`、`changes`、`war
 | `0` | 成功 |
 | `1` | 执行失败，或 `doctor` 未全部通过 |
 | `2` | 参数/配置无效，或取消交互 |
-| `3` | 安全策略拒绝操作 |
+| `3` | 未满足操作条件，例如 WezTerm 配置仍引用模块 |

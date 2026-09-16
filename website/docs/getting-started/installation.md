@@ -1,93 +1,76 @@
 ---
 sidebar_position: 1
 title: 安装
-description: 检查前置条件，并使用 npx 或 uvx 安装 Lua 模块与 Codex bridge。
+description: 使用 npx 或 uvx 安装 WezTerm Codex Status Line。
 ---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 # 安装
 
-`npx` 与 `uvx` 提供相同的命令、配置 schema 和安装结果。选择一个入口即可，不需要同时安装两套包。
+使用 `npx` 或 `uvx` 安装状态栏。两个入口提供相同的命令和配置，任选一个即可。
 
-下列命令从 [GitHub Releases](https://github.com/un4gt/wezterm-codex-status-line/releases/tag/v0.1.0) 下载并安装 v0.1.0。安装完成后，按照[配置 WezTerm](./wezterm-config.md)加载状态栏。
+## 要求
 
-## 前置条件
+- 已安装 [WezTerm](https://wezterm.org/)。
+- Codex CLI 支持 `SessionStart` hook。
+- 使用 `npx` 时，需要 Node.js 20 或更高版本。
+- 使用 `uvx` 时，需要 uv 和 Python 3.10 或更高版本。uv 可以按需下载 Python。
+- Windows 需要 PowerShell 5.1 或更高版本。
 
-| 组件 | 要求 |
-| --- | --- |
-| WezTerm | 需要 pane 进程信息、`pane:split()`、`pane:inject_output()` 与 `wezterm cli kill-pane --pane-id` |
-| Codex CLI | 需要 `SessionStart` hook；启用 terminal title bridge 时还需要 `codex app-server --stdio` |
-| npx 入口 | Node.js 20 或更高版本 |
-| uvx 入口 | Python 3.10 或更高版本，以及可用的 `uvx` |
-| Windows | 安装与卸载过程需要 Windows PowerShell 5.1 或更高版本 |
-| Git | 可选；仅用于刷新 `git` segment |
-| 字体 | Powerline 渲染需要包含相应 glyph 的字体；否则使用 `--no-powerline` |
-
-项目未声明具体的 WezTerm 或 Codex 最低版本号。安装后应运行 `doctor`，并在实际会话中验证所需 API 与 Hook 行为。
+Git 用于显示分支和项目名，为可选依赖。默认图标需要 Nerd Font；显示方块或乱码时，可[切换为纯文本](../guides/configuration.md#渲染与图标)。
 
 macOS 暂未完成实机验证；Linux 暂未完成 Wayland/X11 桌面验证。
 
-## 使用 npx
+## 运行安装命令
 
-```powershell
+以下命令从 [GitHub Releases](https://github.com/un4gt/wezterm-codex-status-line/releases/tag/v0.1.0) 安装 v0.1.0：
+
+<Tabs groupId="installer">
+<TabItem value="npx" label="npx">
+
+```sh
 npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line install --no-title-bridge
 ```
 
-## 使用 uvx
+</TabItem>
+<TabItem value="uvx" label="uvx">
 
-```bash
+```sh
 uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line install --no-title-bridge
 ```
 
-## Terminal title bridge
+</TabItem>
+</Tabs>
 
-上面的安装命令使用 `--no-title-bridge`。macOS 和 Linux 请保留此选项，这两个平台暂不支持自动配置 Codex terminal title。
+命令将状态栏文件安装到 `~/.config/wezterm`，并添加 Codex 会话启动 hook。接下来[配置 WezTerm](./wezterm-config.md)，加载状态栏。
 
-在 Windows 上，可使用 `--title-bridge` 启用 terminal title bridge。省略选择时，交互式安装会询问是否启用，默认选择启用。它会写入以下用户配置，并从新 Codex 会话开始生效：
+## 启用终端标题
+
+终端标题可以让状态栏及时显示推理强度的变化。Windows 用户可将安装命令末尾的 `--no-title-bridge` 替换为 `--title-bridge` 来启用此功能。
+
+macOS 和 Linux 请保留 `--no-title-bridge`。这两个平台暂不支持自动配置 Codex 终端标题。
+
+启用后，安装器会在 Codex 配置中写入：
 
 ```toml title="$CODEX_HOME/config.toml"
 [tui]
 terminal_title = ["app-name", "reasoning", "project-name"]
 ```
 
-该 bridge 用于及时读取 reasoning effort 的变化。关闭后，插件仍可从 rollout、Codex 配置和进程信息获取其他数据。
+新配置从下一次 Codex 会话开始生效。关闭此功能时，状态栏仍可读取会话记录中的模型、推理强度和用量。卸载时的标题恢复规则见[本地文件与数据](../reference/security-and-files.md#终端标题)。
 
-脚本或 CI 中应明确选择，避免等待交互输入：
+## 自定义目录
 
-```powershell
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line install --title-bridge
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line install --no-title-bridge
+默认安装目录为 `~/.config/wezterm`。如果 WezTerm 使用其他配置目录，在子命令之前传入 `--wezterm-module-dir`：
+
+```sh
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line --wezterm-module-dir ./wezterm-config install --no-title-bridge
 ```
 
-```bash
-uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line install --title-bridge
-uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line install --no-title-bridge
-```
+该目录需要位于 WezTerm 的 Lua 模块搜索路径中。以后运行 `configure`、`doctor`、`update` 或 `uninstall` 时，也要传入同一路径。文件位置和环境变量见[本地文件与数据](../reference/security-and-files.md)。
 
-全局 `--yes` 也会选择启用 title bridge，但自动化场景使用语义明确的 `--title-bridge` 或 `--no-title-bridge` 更易审计。
+## 下一步
 
-## 安装器执行的操作
-
-`install` 会：
-
-1. 从当前 npm 或 Python 包读取同版本资源，并在目标目录完整暂存。
-2. 先替换 bridge 与 core，最后替换 Lua 入口文件。
-3. 以结构化 JSON 合并 `$CODEX_HOME/hooks.json` 中的 `SessionStart` handler。
-4. 可选地通过 Codex app-server 配置 terminal title。
-5. 写入 schema 4 的 `bridge.json`，记录包版本、runner、安装路径和资源 SHA-256。
-
-`install` 不会创建 `codex_statusline_config.json`，不会编辑 `.wezterm.lua`，也不会 reload WezTerm。
-
-主要安装路径：
-
-```text
-~/.config/wezterm/codex_statusline.lua
-~/.config/wezterm/codex_statusline_core.lua
-~/.config/wezterm/codex_statusline/**/*.lua
-$CODEX_HOME/wezterm-statusline/bin/*
-$CODEX_HOME/wezterm-statusline/bridge.json
-$CODEX_HOME/hooks.json
-```
-
-完整的文件读写与恢复规则见[文件与安全边界](../reference/security-and-files.md)。
-
-下一步：[配置 WezTerm](./wezterm-config.md)。
+[配置 WezTerm](./wezterm-config.md)，然后启动 Codex 查看状态栏。

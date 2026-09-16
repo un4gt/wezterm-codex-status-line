@@ -18,7 +18,6 @@ const sidebars: SidebarsConfig = {
       label: '使用指南',
       items: [
         'guides/configuration',
-        'guides/cli-reference',
         'guides/display-and-data',
         'guides/how-it-works',
       ],
@@ -32,11 +31,13 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: '参考资料',
       items: [
+        'reference/settings',
+        'guides/cli-reference',
         'reference/security-and-files',
         'reference/codex-status-line-items',
-        'reference/development',
       ],
     },
+    'reference/development',
   ],
 };
 

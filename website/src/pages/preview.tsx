@@ -1,5 +1,6 @@
 import type {ChangeEvent, CSSProperties, ReactNode} from 'react';
 import {useEffect, useMemo, useRef, useState} from 'react';
+import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
 import {
@@ -46,29 +47,29 @@ const modelPresets = [
 
 const segmentMeta: Record<SegmentId, {label: string; description: string}> = {
   label: {label: '标识', description: '固定状态栏前缀'},
-  model: {label: '模型', description: '当前线程模型'},
-  reasoning: {label: '推理级别', description: '当前 reasoning effort'},
+  model: {label: '模型', description: '当前会话的模型'},
+  reasoning: {label: '推理强度', description: '当前推理强度'},
   activity: {label: '特殊状态', description: 'Review、Plan 或 Goal'},
-  provider: {label: '模型服务商', description: '模型 provider'},
-  personality: {label: 'Personality', description: '当前人格配置'},
-  service_tier: {label: 'Service tier', description: '当前服务等级'},
-  cwd: {label: '工作目录', description: '线程当前目录'},
+  provider: {label: '模型服务商', description: '当前模型服务商'},
+  personality: {label: '人格设置', description: '当前人格配置'},
+  service_tier: {label: '服务等级', description: '当前服务等级'},
+  cwd: {label: '工作目录', description: '当前会话的工作目录'},
   project: {label: '项目名', description: 'Git 根目录名称'},
   git: {label: 'Git 分支', description: '当前分支'},
-  permissions: {label: '沙箱权限', description: 'Sandbox policy'},
-  approval: {label: '审批策略', description: 'Approval policy'},
+  permissions: {label: '沙箱权限', description: '当前沙箱权限'},
+  approval: {label: '审批策略', description: '当前审批策略'},
   context: {label: '上下文剩余', description: '剩余比例与容量条'},
   context_used: {label: '上下文已用', description: '已用上下文比例'},
   context_window: {label: '上下文窗口', description: '模型窗口上限'},
   used_tokens: {label: '输入 / 输出', description: '↑ 累计输入（含缓存） · ↓ 累计输出'},
   cache_rate: {label: '缓存率', description: '缓存输入占总输入的比例'},
   cost: {label: '估算费用', description: '按当前模型单价估算会话 Token 费用'},
-  input_tokens: {label: '输入 Token', description: '累计 input，含缓存'},
-  cached_tokens: {label: '缓存 Token', description: '累计 cached input'},
-  output_tokens: {label: '输出 Token', description: '累计 output'},
-  reasoning_tokens: {label: '推理 Token', description: '累计 reasoning output'},
-  thread_id: {label: '线程 ID', description: '线程 ID 前 8 位'},
-  task_progress: {label: '任务进度', description: '预览数据，不猜测 rollout'},
+  input_tokens: {label: '输入 Token', description: '累计输入，包含缓存'},
+  cached_tokens: {label: '缓存 Token', description: '累计缓存输入'},
+  output_tokens: {label: '输出 Token', description: '累计输出'},
+  reasoning_tokens: {label: '推理 Token', description: '累计推理输出'},
+  thread_id: {label: '会话 ID', description: '会话 ID 前 8 位'},
+  task_progress: {label: '任务进度', description: '仅用于预览，实际会话不提供此字段'},
   codex_version: {label: 'Codex 版本', description: '当前 CLI 版本'},
   icon: {label: '项目图标', description: '固定在右侧插件版本号之前'},
 };
@@ -399,7 +400,7 @@ export default function PreviewPage(): ReactNode {
     anchor.download = 'codex_statusline_config.json';
     anchor.click();
     URL.revokeObjectURL(objectUrl);
-    showToast('配置文件已开始下载。');
+    showToast('已开始下载 JSON。按配置指南导入后，重新加载 WezTerm 配置。');
   };
 
   const importConfig = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -412,7 +413,7 @@ export default function PreviewPage(): ReactNode {
       setConfig(hydrateConfig(parsed));
       showToast('配置已导入。');
     } catch {
-      showToast('导入失败：不是有效的 Schema 1 配置。');
+      showToast('导入失败：请选择完整的状态栏配置 JSON，或重新下载后再试。');
     }
   };
 
@@ -445,7 +446,8 @@ export default function PreviewPage(): ReactNode {
             <div className={styles.headerRow}>
               <div>
                 <Heading as="h1">状态栏配置与预览</Heading>
-                <p>Schema 1 · {enabledCount}/{segmentIds.length} 字段启用 · {columns} 列 · {config.options.bottom_pane.rows} 行</p>
+                <p>{enabledCount}/{segmentIds.length} 字段启用 · {columns} 列 · {config.options.bottom_pane.rows} 行</p>
+                <p>调整显示后下载 JSON，再<Link to="/docs/guides/configuration#导入网页配置">导入本机配置</Link>。下方使用模拟会话数据。</p>
               </div>
               <div className={styles.commands}>
                 <button type="button" className={styles.commandButton} onClick={copyShareLink}>
@@ -458,11 +460,11 @@ export default function PreviewPage(): ReactNode {
                 </button>
                 <button type="button" className={styles.commandButton} onClick={downloadConfig}>
                   <Download size={16} aria-hidden="true" />
-                  <span>下载</span>
+                  <span>下载 JSON</span>
                 </button>
                 <button type="button" className={styles.commandButton} onClick={() => importRef.current?.click()}>
                   <Upload size={16} aria-hidden="true" />
-                  <span>导入</span>
+                  <span>导入 JSON</span>
                 </button>
                 <button
                   type="button"
@@ -578,7 +580,7 @@ export default function PreviewPage(): ReactNode {
 
                 <div className={styles.toggleGrid}>
                   <ToggleField
-                    label="底部状态 pane"
+                    label="底部状态栏"
                     configKey="bottom_pane.enabled"
                     checked={config.options.bottom_pane.enabled ?? true}
                     onChange={(checked) => updateOptions((next) => { next.options.bottom_pane.enabled = checked; })}
@@ -713,16 +715,16 @@ export default function PreviewPage(): ReactNode {
               <summary className={styles.detailsSummary}>
                 <span>
                   <Sliders size={18} aria-hidden="true" />
-                  Token、线程与状态标签模拟
+                  Token、会话与状态预览数据
                 </span>
-                <small>完整模拟数据</small>
+                <small>预览数据</small>
               </summary>
               <div className={styles.detailsBody}>
                 <div className={styles.formGridWide}>
                   {([
                     ['permissions', '沙箱权限'],
                     ['approval', '审批策略'],
-                    ['thread_id', '线程 ID'],
+                    ['thread_id', '会话 ID'],
                     ['codex_version', 'Codex 版本'],
                   ] as const).map(([key, label]) => (
                     <label className={styles.field} key={key}>
@@ -796,7 +798,7 @@ export default function PreviewPage(): ReactNode {
 
                 {sample.activity?.goal ? (
                   <div className={styles.subsection}>
-                    <Heading as="h3">Goal 元数据</Heading>
+                    <Heading as="h3">Goal 预览数据</Heading>
                     <div className={styles.formGridWide}>
                       {([
                         ['token_budget', 'Token 预算'],
@@ -919,31 +921,31 @@ export default function PreviewPage(): ReactNode {
               <summary className={styles.detailsSummary}>
                 <span>
                   <Settings2 size={18} aria-hidden="true" />
-                  运行时、会话绑定与进程检测
+                  日志、会话与进程检测
                 </span>
                 <small>高级配置</small>
               </summary>
               <div className={styles.detailsBody}>
                 <div className={styles.advancedGroup}>
-                  <Heading as="h3">运行时与底部 pane</Heading>
+                  <Heading as="h3">日志与底部窗格</Heading>
                   <div className={styles.toggleGrid}>
                     <ToggleField label="调试日志" configKey="debug" checked={config.options.debug ?? false} onChange={(checked) => updateOptions((next) => { next.options.debug = checked; })} />
                     <ToggleField label="写入加载日志" configKey="log.enabled" checked={config.options.log?.enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.log!.enabled = checked; })} />
-                    <ToggleField label="阻止 pane 抢焦点" configKey="bottom_pane.prevent_focus" checked={config.options.bottom_pane.prevent_focus} onChange={(checked) => updateOptions((next) => { next.options.bottom_pane.prevent_focus = checked; })} />
+                    <ToggleField label="保持 Codex 窗格焦点" configKey="bottom_pane.prevent_focus" checked={config.options.bottom_pane.prevent_focus} onChange={(checked) => updateOptions((next) => { next.options.bottom_pane.prevent_focus = checked; })} />
                     <ToggleField label="兼容右侧状态栏" configKey="compat.update_right_status" checked={config.options.compat?.update_right_status ?? false} onChange={(checked) => updateOptions((next) => { next.options.compat!.update_right_status = checked; })} />
                     <ToggleField label="读取 Codex 配置" configKey="codex_config.enabled" checked={config.options.codex_config?.enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.codex_config!.enabled = checked; })} />
                     <ToggleField label="标题桥接" configKey="title_bridge.enabled" checked={config.options.title_bridge.enabled} onChange={(checked) => updateOptions((next) => { next.options.title_bridge.enabled = checked; })} />
                   </div>
                   <div className={styles.formGridWide}>
-                    <label className={styles.field}><span>Codex home <code>codex_home</code></span><input value={config.options.codex_home ?? ''} onChange={(event) => updateOptions((next) => { next.options.codex_home = event.target.value; })} /></label>
+                    <label className={styles.field}><span>Codex 数据目录 <code>codex_home</code></span><input value={config.options.codex_home ?? ''} onChange={(event) => updateOptions((next) => { next.options.codex_home = event.target.value; })} /></label>
                     <label className={styles.field}><span>日志标记 <code>log.marker</code></span><input value={config.options.log?.marker ?? ''} onChange={(event) => updateOptions((next) => { next.options.log!.marker = event.target.value; })} /></label>
                     <label className={styles.field}><span>Codex 配置路径 <code>codex_config.path</code></span><input value={config.options.codex_config?.path ?? ''} onChange={(event) => updateOptions((next) => { next.options.codex_config!.path = event.target.value; })} /></label>
                     <label className={styles.field}><span>Codex 配置缓存（秒） <code>codex_config.cache_ttl_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.codex_config?.cache_ttl_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.codex_config!.cache_ttl_seconds = Number(event.target.value); })} /></label>
                     <label className={styles.field}><span>退出宽限（秒） <code>bottom_pane.close_grace_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.bottom_pane.close_grace_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.bottom_pane.close_grace_seconds = Number(event.target.value); })} /></label>
                     <label className={styles.field}><span>Git 缓存（秒） <code>git.cache_ttl_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.git.cache_ttl_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.git.cache_ttl_seconds = Number(event.target.value); })} /></label>
                     <label className={styles.field}><span>应用名 <code>title_bridge.app_name</code></span><input value={config.options.title_bridge.app_name ?? ''} onChange={(event) => updateOptions((next) => { next.options.title_bridge.app_name = event.target.value; })} /></label>
-                    <label className={styles.field}><span>Git glyph <code>theme.glyphs.branch</code></span><input value={config.options.theme.glyphs?.branch ?? ''} maxLength={8} onChange={(event) => updateOptions((next) => { next.options.theme.glyphs = {...next.options.theme.glyphs!, branch: event.target.value}; })} /></label>
-                    <label className={styles.field}><span>目录 glyph <code>theme.glyphs.folder</code></span><input value={config.options.theme.glyphs?.folder ?? ''} maxLength={8} onChange={(event) => updateOptions((next) => { next.options.theme.glyphs = {...next.options.theme.glyphs!, folder: event.target.value}; })} /></label>
+                    <label className={styles.field}><span>Git 图标 <code>theme.glyphs.branch</code></span><input value={config.options.theme.glyphs?.branch ?? ''} maxLength={8} onChange={(event) => updateOptions((next) => { next.options.theme.glyphs = {...next.options.theme.glyphs!, branch: event.target.value}; })} /></label>
+                    <label className={styles.field}><span>目录图标 <code>theme.glyphs.folder</code></span><input value={config.options.theme.glyphs?.folder ?? ''} maxLength={8} onChange={(event) => updateOptions((next) => { next.options.theme.glyphs = {...next.options.theme.glyphs!, folder: event.target.value}; })} /></label>
                   </div>
                 </div>
 
@@ -952,7 +954,7 @@ export default function PreviewPage(): ReactNode {
                   <div className={styles.toggleGrid}>
                     <ToggleField label="会话绑定" configKey="sessions.enabled" checked={config.options.sessions.enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.sessions.enabled = checked; })} />
                     <ToggleField label="允许最新会话回退" configKey="sessions.allow_fallback_latest" checked={config.options.sessions.allow_fallback_latest} onChange={(checked) => updateOptions((next) => { next.options.sessions.allow_fallback_latest = checked; })} />
-                    <ToggleField label="Resume 回退" configKey="sessions.resume_fallback_enabled" checked={config.options.sessions.resume_fallback_enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.sessions.resume_fallback_enabled = checked; })} />
+                    <ToggleField label="恢复会话时临时匹配" configKey="sessions.resume_fallback_enabled" checked={config.options.sessions.resume_fallback_enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.sessions.resume_fallback_enabled = checked; })} />
                   </div>
                   <div className={styles.formGridWide}>
                     <label className={styles.field}>
@@ -961,11 +963,11 @@ export default function PreviewPage(): ReactNode {
                         <option value="auto">auto</option><option value="hook">hook</option><option value="heuristic">heuristic</option>
                       </select>
                     </label>
-                    <label className={styles.field}><span>Bridge 目录 <code>sessions.bridge_dir</code></span><input value={config.options.sessions.bridge_dir ?? ''} onChange={(event) => updateOptions((next) => { next.options.sessions.bridge_dir = event.target.value; })} /></label>
+                    <label className={styles.field}><span>会话映射目录 <code>sessions.bridge_dir</code></span><input value={config.options.sessions.bridge_dir ?? ''} onChange={(event) => updateOptions((next) => { next.options.sessions.bridge_dir = event.target.value; })} /></label>
                     {([
-                      ['resume_fallback_max_age_seconds', 'Resume 最大年龄（秒）', 1],
-                      ['resume_fallback_clock_skew_seconds', 'Resume 时钟偏差（秒）', 0],
-                      ['resume_fallback_scan_ttl_seconds', 'Resume 扫描缓存（秒）', 0],
+                      ['resume_fallback_max_age_seconds', '候选会话有效期（秒）', 1],
+                      ['resume_fallback_clock_skew_seconds', '允许的时钟偏差（秒）', 0],
+                      ['resume_fallback_scan_ttl_seconds', '恢复会话扫描间隔（秒）', 0],
                       ['cache_ttl_seconds', '会话缓存（秒）', 0],
                       ['full_scan_ttl_seconds', '完整扫描缓存（秒）', 0],
                       ['tail_ttl_seconds', '尾部读取缓存（秒）', 0],
