@@ -8,7 +8,7 @@ description: 更新同版本资源，验证结果，并按安全顺序卸载状�
 
 ## 更新
 
-不需要先卸载。使用原入口运行目标版本的 `update`；下面的远程地址固定为测试版 `v0.1.0`，后续升级时使用新版本提供的地址：
+不需要先卸载。使用原入口运行目标版本的 `update`；下面的命令使用 `v0.1.0`，升级时替换为目标版本的安装包地址：
 
 ```powershell
 npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line update

@@ -8,7 +8,7 @@ description: 检查前置条件，并使用 npx 或 uvx 安装 Lua 模块与 Cod
 
 `npx` 与 `uvx` 提供相同的命令、配置 schema 和安装结果。选择一个入口即可，不需要同时安装两套包。
 
-当前使用 [GitHub v0.1.0 预发布附件](https://github.com/un4gt/wezterm-codex-status-line/releases/tag/v0.1.0) 进行小范围测试，尚未发布到 npm/PyPI。下列命令直接使用远程 tarball 或 wheel，不需要注册表账号或密钥。测试时先使用 `--no-title-bridge`，已知问题见版本说明。
+下列命令从 [GitHub Releases](https://github.com/un4gt/wezterm-codex-status-line/releases/tag/v0.1.0) 下载并安装 v0.1.0。安装完成后，按照[配置 WezTerm](./wezterm-config.md)加载状态栏。
 
 ## 前置条件
 
@@ -24,7 +24,7 @@ description: 检查前置条件，并使用 npx 或 uvx 安装 Lua 模块与 Cod
 
 项目未声明具体的 WezTerm 或 Codex 最低版本号。安装后应运行 `doctor`，并在实际会话中验证所需 API 与 Hook 行为。
 
-macOS：因缺乏设备，没有在 macOS 实机中测试。Linux：目前缺少 Wayland/X11 桌面环境，尚未完成真实 GUI 验证。
+macOS 暂未完成实机验证；Linux 暂未完成 Wayland/X11 桌面验证。
 
 ## 使用 npx
 
@@ -40,7 +40,9 @@ uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/
 
 ## Terminal title bridge
 
-交互式终端会询问是否启用 terminal title bridge，默认选择启用。它通过 Codex app-server 结构化写入以下用户配置，并从新 Codex 会话开始生效：
+上面的安装命令使用 `--no-title-bridge`。macOS 和 Linux 请保留此选项，这两个平台暂不支持自动配置 Codex terminal title。
+
+在 Windows 上，可使用 `--title-bridge` 启用 terminal title bridge。省略选择时，交互式安装会询问是否启用，默认选择启用。它会写入以下用户配置，并从新 Codex 会话开始生效：
 
 ```toml title="$CODEX_HOME/config.toml"
 [tui]

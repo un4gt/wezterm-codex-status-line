@@ -125,17 +125,11 @@ pwsh -NoProfile -File scripts/run_wezterm_live_test.ps1
 
 CI 在 Windows、macOS 与 Linux 上运行 bridge、Lua、两套 CLI 和资源一致性检查；网站 job 单独执行 `npm ci`、类型检查和生产构建。
 
-这些自动化测试不需要桌面环境。macOS 因缺乏设备，尚未进行实机测试；Linux 尚未进行 Wayland/X11 真实 GUI 验证。
+自动化测试覆盖命令行行为与资源一致性；桌面兼容性范围见[安装指南](../getting-started/installation.md)。
 
-没有 Linux 桌面设备时，后续可在 Ubuntu CI 中增加 X11/Wayland 两组 GUI 检查：X11 使用 Xvfb 提供虚拟显示，Wayland 使用 Weston headless 提供合成器，并为 WezTerm 配置软件渲染。两组检查可以复用 `tests/wezterm_live_test.lua`，还需要补充 Linux 启动器以管理测试进程、超时和日志。当前 CI 尚未包含这两组 GUI 检查；通过虚拟显示测试后，仍需在真实 GNOME/KDE 桌面上验证焦点、缩放和字体行为。
+`release.yml` 构建 npm tarball、Python wheel 和源码包，并检查包内资源及 MIT LICENSE 与源码一致。版本标签需与两个包的版本一致，发布说明位于 `release-notes/<tag>.md`。
 
-发布工作流的构建和 npm 发布 job 均显式使用 npm 11.7.0，以满足可信发布对 npm >=11.5.1 的要求。两种包从根目录同步 MIT LICENSE；归档验证同时检查许可文本与源码一致。
-
-推送 `v*` 标签默认只构建包并创建 GitHub 预发布，附带 npm tarball、Python wheel 和源码包。标签必须与两个包的版本一致，并包含对应的 `release-notes/<tag>.md`。测试者可以用安装页中的 `npx --package=<tarball URL>` 或 `uvx --from <wheel URL>` 命令直接运行这些附件。
-
-准备好 npm/PyPI 的 Trusted Publisher 后，如需发布到注册表，在 Actions 中手动运行 `release.yml`，选择已有版本标签，并勾选 `publish_registries`。默认未勾选，普通标签推送也不会运行 npm/PyPI 发布 job。
-
-`deploy-docs.yml` 在 `main` 的网站、contract 或 runtime 相关文件变化时构建 GitHub Pages。仓库管理员首次部署前需要在 `Settings → Pages` 中把 Source 设为 `GitHub Actions`。
+`deploy-docs.yml` 在 `main` 的网站、contract 或 runtime 相关文件变化时构建并部署文档。GitHub Pages 的发布来源为 GitHub Actions。
 
 ## 发布前清单
 

@@ -19,9 +19,9 @@
 
 ## 安装
 
-当前通过 [GitHub v0.1.0 预发布附件](https://github.com/un4gt/wezterm-codex-status-line/releases/tag/v0.1.0) 进行小范围测试。以下命令直接从固定版本的远程包安装，无需 npm/PyPI 账号。
+使用以下任一命令安装 [v0.1.0](https://github.com/un4gt/wezterm-codex-status-line/releases/tag/v0.1.0)。安装包托管在 GitHub Releases，`npx` 与 `uvx` 提供相同的功能。
 
-macOS：因缺乏设备，没有在 macOS 实机中测试。Linux：目前缺少 Wayland/X11 桌面环境，尚未完成真实 GUI 验证。
+macOS 暂未完成实机验证；Linux 暂未完成 Wayland/X11 桌面验证。
 
 使用 Node.js：
 
@@ -107,7 +107,7 @@ require("codex_statusline").setup({
 
 手动关闭状态栏会隐藏当前 Codex 批次的状态栏，重启 Codex 或触发 `codex-statusline-show` 可恢复；不添加默认快捷键。可自行给已有按键绑定使用 `wezterm.action.EmitEvent("codex-statusline-show")`。
 
-SSH 中的 WezTerm pane 使用相同布局策略，但本次不扩展远程进程识别或 tmux 内部分屏检测。配置 schema 仍为 1，省略防抖字段的旧配置继续有效。
+SSH 中的 WezTerm pane 使用相同布局策略；远程进程识别和 tmux 内部分屏检测不受支持。配置 schema 为 1，省略防抖字段时使用默认值。
 
 ## 代码分层
 

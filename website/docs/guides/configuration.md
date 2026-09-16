@@ -45,6 +45,10 @@ uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/
 npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure --from .\codex_statusline_config.json
 ```
 
+将 `--from` 后面的路径替换为下载文件的实际路径。CLI 会校验完整 JSON，并将配置写入状态栏模块目录；默认位置是 `~/.config/wezterm/codex_statusline_config.json`。
+
+导入后重新加载 WezTerm 配置（Windows 默认快捷键为 `Ctrl+Shift+R`）。WezTerm 配置中保留 `require("codex_statusline").setup()`；如果 `setup({...})` 中包含同名选项，它们会覆盖 JSON 中的值。
+
 CLI 与网页会拒绝缺少必需字段、未知字段、重复或未知 segment，以及不符合 `#RRGGBB` 的颜色。机器可读定义见 [config.schema.json](https://un4gt.github.io/wezterm-codex-status-line/config.schema.json)。
 
 :::warning[完整文档，不是 patch]
