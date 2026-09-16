@@ -409,13 +409,14 @@ class BridgeTests(unittest.TestCase):
                 for handler in group.get("hooks", [])
             ]
             self.assertEqual(len(handlers), 1)
-            self.assertIn(str(installed_ps).lower(), handlers[0]["commandWindows"].lower())
+            # GitHub's Windows runner may expose TEMP through an 8.3 path alias.
+            self.assertIn(str(installed_ps.resolve()).lower(), handlers[0]["commandWindows"].lower())
             manifest = json.loads(
                 (home / "wezterm-statusline" / "bridge.json").read_text(encoding="utf-8-sig")
             )
             self.assertEqual(manifest["schema"], 4)
             self.assertEqual(manifest["package"]["version"], "0.1.0")
-            self.assertEqual(Path(manifest["wezterm_module_dir"]), module_dir)
+            self.assertEqual(Path(manifest["wezterm_module_dir"]).resolve(), module_dir.resolve())
             self.assertTrue((bridge_bin / "codex_statusline_bridge.js").exists())
 
             uninstall = command.copy()
