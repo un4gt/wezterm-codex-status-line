@@ -170,6 +170,82 @@ function M.extract_turn_context(object)
   return nil
 end
 
+-- Keep token counts per request model, so price overrides can be applied at
+-- render time without repricing the entire thread as its currently selected model.
+function M.new_cost_history()
+  return { offset = 0, by_model = {}, complete = true }
+end
+
+local function cost_counts(usage)
+  if type(usage) ~= "table" then return nil end
+  local result = {}
+  for _, key in ipairs({ "input_tokens", "cached_input_tokens", "output_tokens" }) do
+    local value = to_number(usage[key])
+    if not value or value < 0 or value ~= value or value == math.huge then return nil end
+    result[key] = value
+  end
+  if result.cached_input_tokens > result.input_tokens then return nil end
+  return result
+end
+
+function M.record_cost_usage(history, object)
+  local context = M.extract_turn_context(object)
+  if context then
+    local collaboration = type(context.collaboration_mode) == "table" and context.collaboration_mode.settings or nil
+    history.model = trim(context.model) or (type(collaboration) == "table" and trim(collaboration.model) or nil)
+    return
+  end
+
+  -- Thread settings describe the selected model, which may change while a
+  -- request is still finishing. Its usage belongs to that request's turn context.
+  local info = M.extract_token_usage_info(object)
+  if not info then return end
+  local total = cost_counts(info.total)
+  if not total then
+    history.complete = false
+    return
+  end
+
+  local previous = history.total
+  history.total = total
+  local delta, changed = {}, false
+  for key, value in pairs(total) do
+    delta[key] = value - (previous and previous[key] or 0)
+    if delta[key] < 0 then
+      -- A reset/correction cannot be assigned to a model reliably.
+      history.complete = false
+      return
+    end
+    changed = changed or delta[key] > 0
+  end
+  if not changed then return end -- Codex also emits repeated cumulative totals.
+
+  local last = cost_counts(info.last)
+  if not previous and not last then
+    history.complete = false
+    return
+  end
+  if last then
+    for key, value in pairs(delta) do
+      if value ~= last[key] then
+        -- Includes resumed/forked logs whose first total contains missing history.
+        history.complete = false
+        return
+      end
+    end
+  end
+  if not history.model or delta.cached_input_tokens > delta.input_tokens then
+    history.complete = false
+    return
+  end
+
+  local counts = history.by_model[history.model] or { input_raw = 0, cached = 0, output = 0 }
+  counts.input_raw = counts.input_raw + delta.input_tokens
+  counts.cached = counts.cached + delta.cached_input_tokens
+  counts.output = counts.output + delta.output_tokens
+  history.by_model[history.model] = counts
+end
+
 local function normalized_event_type(value)
   local text = trim(value)
   if not text then

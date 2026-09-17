@@ -43,11 +43,11 @@ local function memory_file(content)
       self.position = #self.content + 1
       return value
     end
-    if format == "*l" then
+    if format == "*l" or format == "*L" then
       local newline = self.content:find("\n", self.position, true)
       local value = nil
       if newline then
-        value = self.content:sub(self.position, newline - 1)
+        value = self.content:sub(self.position, format == "*L" and newline or newline - 1)
         self.position = newline + 1
       else
         value = self.content:sub(self.position)
@@ -300,5 +300,88 @@ mapping_available = true
 update(window, main)
 assert_equal(pane_state.rollout_source, "bridge", "mapping replaces activity fallback")
 assert_equal(pane_state.bridge_mapping.generation, "resume-generation", "exact mapping generation")
+
+do
+  local pricing = require("codex_statusline.domain.pricing")
+  local serial = 0
+  local function item(value)
+    serial = serial + 1
+    local key = "cost-history-item-" .. serial
+    marker_values[key] = value
+    return key .. "\n"
+  end
+  local function context(model)
+    return item({ type = "turn_context", payload = { model = model } })
+  end
+  local function usage(total_units, last_units)
+    local function counts(units)
+      return { input_tokens = units * 1000000, cached_input_tokens = units * 800000,
+        output_tokens = units * 100000, total_tokens = units * 1100000 }
+    end
+    return item({ type = "event_msg", payload = { type = "token_count", info = {
+      total_token_usage = counts(total_units), last_token_usage = counts(last_units),
+    } } })
+  end
+  local module = require("codex_statusline.rollout").new(wezterm, {
+    detect_rollout_for_pane = function() return rollout_path, "bridge" end,
+    read_session_meta = function() return {} end,
+    bridge_required = function() return false end,
+  }, { safe_json_parse = function(line)
+    local ok, result = pcall(wezterm.json_parse, line)
+    return ok and result or nil
+  end })
+  local opts = { sessions = { enabled = true, tail_ttl_seconds = 0, max_tail_lines = 2,
+    initial_seek_bytes = 50, max_meta_lines = 5 } }
+  local state = {}
+  rollout_json = context("gpt-5.6-sol") .. usage(1, 1)
+    .. context("gpt-6-astra") .. usage(1, 1) .. usage(2, 1)
+  local function refresh() module.update_rollout_state(opts, main, state) end
+  local function cost(model) return pricing.cost_text(pricing.estimate(model, state.usage)) end
+  refresh()
+  assert_equal(state.usage.input_raw, 2000000, "tail immediately shows current token totals")
+  assert_equal(cost("gpt-6-astra"), "Cost —", "partial history does not expose a partial cost")
+  local reads = 1
+  while not state.usage.cost_complete and reads < 10 do refresh(); reads = reads + 1 end
+  assert_equal(state.usage.cost_complete, true, "history catches up in bounded batches")
+  assert_equal(reads, 3, "historical scan obeys per-refresh line limit")
+  assert_equal(cost("gpt-6-astra"), "Cost ~$10.92", "resume rebuilds models before initial tail")
+  refresh()
+  assert_equal(cost("gpt-5.6-sol"), "Cost ~$10.92", "idle refresh does not double count")
+
+  rollout_json = rollout_json .. context("gpt-5.6-sol") .. usage(3, 1)
+  refresh()
+  assert_equal(cost("gpt-5.6-sol"), "Cost ~$14.04", "new usage extends the restored history")
+
+  -- Split a newly appended record across refreshes, as a concurrent writer can.
+  local appended = usage(4, 1)
+  local prefix = appended:sub(1, 10)
+  rollout_json = rollout_json .. prefix
+  local previous_offset = state.offset
+  refresh()
+  assert_equal(state.offset, previous_offset, "partial line remains unread")
+  assert_equal(state.usage.input_raw, 3000000, "partial line cannot change token totals")
+  assert_equal(cost("gpt-5.6-sol"), "Cost —", "partial history is marked pending")
+  rollout_json = rollout_json .. appended:sub(#prefix + 1)
+  refresh()
+  assert_equal(cost("gpt-5.6-sol"), "Cost ~$17.16", "completed line is read exactly once")
+
+  -- Upgrading the plugin preserves pane offsets but has no prior cost history.
+  state.cost_history = nil
+  refresh()
+  assert_equal(cost("gpt-5.6-sol"), "Cost —", "upgrade rebuilds rather than guessing from current totals")
+  for _ = 1, 10 do if state.usage.cost_complete then break end; refresh() end
+  assert_equal(cost("gpt-5.6-sol"), "Cost ~$17.16", "upgrade reconstructs cost at an existing offset")
+
+  rollout_json = context("gpt-6-astra") .. usage(1, 1)
+  refresh()
+  assert_equal(cost("gpt-6-astra"), "Cost ~$7.80", "truncated file rebuilds without old buckets")
+  assert_equal(state.usage.by_model["gpt-5.6-sol"], nil, "truncation removes the old model history")
+  module.clear_rollout_data(state)
+  assert_equal(state.cost_history, nil, "leaving a thread clears its cost history")
+
+  rollout_json = usage(1, 1)
+  refresh()
+  assert_equal(cost("gpt-6-astra"), "Cost —", "current selection does not fill in a missing historical model")
+end
 
 print("statusline resume tests passed")

@@ -63,7 +63,7 @@ const segmentMeta: Record<SegmentId, {label: string; description: string}> = {
   context_window: {label: '上下文窗口', description: '模型窗口上限'},
   used_tokens: {label: '输入 / 输出', description: '↑ 累计输入（含缓存） · ↓ 累计输出'},
   cache_rate: {label: '缓存率', description: '缓存输入占总输入的比例'},
-  cost: {label: '估算费用', description: '按当前模型单价估算会话 Token 费用'},
+  cost: {label: '估算费用', description: '按各次请求使用的模型分别累计 Token 费用'},
   input_tokens: {label: '输入 Token', description: '累计输入，包含缓存'},
   cached_tokens: {label: '缓存 Token', description: '累计缓存输入'},
   output_tokens: {label: '输出 Token', description: '累计输出'},

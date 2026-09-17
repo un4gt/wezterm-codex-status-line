@@ -10,11 +10,16 @@ export interface PricingConfig {
   models: Record<string, ModelPrice>;
 }
 
-export interface TokenUsage {
+export interface TokenCounts {
   input_raw?: number;
   input?: number;
   cached?: number;
   output?: number;
+}
+
+export interface TokenUsage extends TokenCounts {
+  by_model?: Record<string, TokenCounts>;
+  cost_complete?: boolean;
 }
 
 export const builtinPrices: Record<string, ModelPrice> = pricingData.models;
@@ -65,12 +70,26 @@ export function cacheRate(usage: TokenUsage): number | undefined {
   return counts.input ? Math.round(counts.cached / counts.input * 1000) / 10 : undefined;
 }
 
-export function estimateCost(model: string | undefined, usage: TokenUsage, pricing?: PricingConfig): number | undefined {
+function estimateModelCost(model: string | undefined, usage: TokenCounts, pricing?: PricingConfig): number | undefined {
   const price = resolveModelPrice(model, pricing);
   const counts = usageCounts(usage);
   if (!price || counts.input === undefined || counts.output === undefined) return undefined;
   const cost = ((counts.input - counts.cached) * price.input + counts.cached * price.cached_input + counts.output * price.output) / 1e6;
   return Number.isFinite(cost) ? cost : undefined;
+}
+
+export function estimateCost(model: string | undefined, usage: TokenUsage, pricing?: PricingConfig): number | undefined {
+  if (usage.cost_complete === false) return undefined;
+  if (usage.by_model) {
+    let cost = 0;
+    for (const [usageModel, counts] of Object.entries(usage.by_model)) {
+      const subtotal = estimateModelCost(usageModel, counts, pricing);
+      if (subtotal === undefined) return undefined;
+      cost += subtotal;
+    }
+    return Number.isFinite(cost) ? cost : undefined;
+  }
+  return estimateModelCost(model, usage, pricing);
 }
 
 export function costText(cost?: number): string {

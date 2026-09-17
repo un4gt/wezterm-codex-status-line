@@ -39,4 +39,4 @@ Codex 原生状态栏位于 Codex 界面底部，本扩展的状态栏位于独�
 
 本扩展根据本地会话记录显示数据，因此可能与 Codex 界面存在短暂延迟。调用额度、Enterprise credits、PR 状态等数据不在本扩展的显示范围内。
 
-本扩展的 `used_tokens` 显示累计输入和输出，输入包含缓存。费用使用当前模型单价估算，具体统计方法见[Token 与费用](../guides/display-and-data.md#token-与费用)。
+本扩展的 `used_tokens` 显示累计输入和输出，输入包含缓存。费用按各次请求使用的模型分别估算并累计，具体统计方法见[Token 与费用](../guides/display-and-data.md#token-与费用)。

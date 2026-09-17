@@ -25,6 +25,42 @@ function M.new(wezterm, index, adapter)
       pane_state.token_usage_last,
       pane_state.model_context_window
     )
+    if pane_state.usage then
+      local history = pane_state.cost_history
+      pane_state.usage.by_model = history and history.by_model or {}
+      pane_state.usage.cost_complete = history ~= nil and history.complete
+        and history.total ~= nil and history.caught_up == true
+    end
+  end
+
+  local function read_complete_line(fh)
+    local start = fh:seek()
+    local line = fh:read("*L")
+    if line and line:sub(-1) ~= "\n" then
+      -- Retry a line that Codex is still writing on the next refresh.
+      fh:seek("set", start)
+      return nil
+    end
+    return line and line:gsub("\r?\n$", "") or nil
+  end
+
+  local function update_cost_history(opts, pane_state, fh, file_size)
+    local history = pane_state.cost_history or core.new_cost_history()
+    pane_state.cost_history = history
+    fh:seek("set", history.offset)
+    for _ = 1, opts.sessions.max_tail_lines do
+      if fh:seek() >= pane_state.offset then break end
+      local line = read_complete_line(fh)
+      if not line then break end
+      local object = safe_json_parse(line)
+      if object then
+        core.record_cost_usage(history, object)
+      elseif not line:match("^%s*$") then
+        history.complete = false
+      end
+    end
+    history.offset = fh:seek()
+    history.caught_up = history.offset == pane_state.offset and pane_state.offset >= file_size
   end
 
   local function clear_rollout_data(pane_state)
@@ -47,6 +83,7 @@ function M.new(wezterm, index, adapter)
     pane_state.token_usage_last = nil
     pane_state.model_context_window = nil
     pane_state.usage = nil
+    pane_state.cost_history = nil
     pane_state.offset = 0
     pane_state.last_read_at = nil
     pane_state.open_fail_first_at = nil
@@ -65,6 +102,7 @@ function M.new(wezterm, index, adapter)
     pane_state.token_usage_last = nil
     pane_state.model_context_window = to_number(pane_state.session_meta and pane_state.session_meta.context_window)
     pane_state.usage = nil
+    pane_state.cost_history = nil
     pane_state.offset = 0
   end
 
@@ -192,7 +230,7 @@ function M.new(wezterm, index, adapter)
     end
     pane_state.last_read_at = now
 
-    local fh, open_err = io.open(pane_state.rollout_path, "r")
+    local fh, open_err = io.open(pane_state.rollout_path, "rb")
     if not fh then
       local now2 = os.time()
       pane_state.open_fail_first_at = pane_state.open_fail_first_at or now2
@@ -243,13 +281,16 @@ function M.new(wezterm, index, adapter)
     fh:seek("set", offset)
     if discard_partial_line then
       -- Drop the partial line if we started in the middle of the file.
-      fh:read("*l")
+      if not read_complete_line(fh) then
+        fh:close()
+        return pane_state
+      end
     end
 
     local max_lines = opts.sessions.max_tail_lines
     local count = 0
     while count < max_lines do
-      local line = fh:read("*l")
+      local line = read_complete_line(fh)
       if not line then
         break
       end
@@ -296,6 +337,7 @@ function M.new(wezterm, index, adapter)
     end
 
     pane_state.offset = fh:seek()
+    update_cost_history(opts, pane_state, fh, file_size)
     fh:close()
 
     update_flat_usage(pane_state)

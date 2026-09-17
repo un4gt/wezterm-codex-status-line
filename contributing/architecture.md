@@ -55,6 +55,10 @@ Lua 在读取 rollout 前检查：
 
 session 索引用于定位候选 rollout，并按较长 TTL 缓存；它不会在每次 `update-status` 事件中完整重读所有 transcript。解析器只处理当前显示所需的 session metadata、turn context 和 token usage。
 
+费用使用独立的历史读取位置，从 rollout 开头分批读取，每轮最多处理 `sessions.max_tail_lines` 行。实时字段仍从尾部更新。历史读取完成后，继续从保存的位置处理新增行；不保存逐条请求，只保存各模型的累计用量。
+
+用量归属以请求的 `turn_context.model` 为准，缺省时读取该 turn context 的 collaboration model。`thread_settings_applied` 表示当前选择，不会修改正在完成的请求或既有用量的模型。相邻 `total_token_usage` 的差值用于去重，并与可用的 `last_token_usage` 核对。缺少历史、计数回退或模型无法确定时，不显示不完整的总费用。渲染时对 `usage.by_model` 应用各模型的当前单价；`usage.cost_complete = false` 表示历史尚未读完或无法完整归属。
+
 ## 6. 合并显示数据
 
 主要数据优先级：

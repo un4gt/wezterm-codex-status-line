@@ -43,7 +43,7 @@ def cache_rate(usage: dict[str, Any]) -> float | None:
     return floor(counts["cached"] / counts["input"] * 1000 + 0.5) / 10 if counts["input"] else None
 
 
-def estimate_cost(model: str | None, usage: dict[str, Any], pricing: dict[str, Any] | None = None) -> float | None:
+def _estimate_model_cost(model: str | None, usage: dict[str, Any], pricing: dict[str, Any] | None = None) -> float | None:
     price = resolve_model_price(model, pricing)
     counts = usage_counts(usage)
     if not price or counts["input"] is None or counts["output"] is None:
@@ -51,6 +51,20 @@ def estimate_cost(model: str | None, usage: dict[str, Any], pricing: dict[str, A
     cost = ((counts["input"] - counts["cached"]) * price["input"]
             + counts["cached"] * price["cached_input"] + counts["output"] * price["output"]) / 1_000_000
     return cost if isfinite(cost) else None
+
+
+def estimate_cost(model: str | None, usage: dict[str, Any], pricing: dict[str, Any] | None = None) -> float | None:
+    if usage.get("cost_complete") is False:
+        return None
+    if isinstance(usage.get("by_model"), dict):
+        cost = 0
+        for usage_model, counts in usage["by_model"].items():
+            subtotal = _estimate_model_cost(usage_model, counts, pricing)
+            if subtotal is None:
+                return None
+            cost += subtotal
+        return cost if isfinite(cost) else None
+    return _estimate_model_cost(model, usage, pricing)
 
 
 def cost_text(cost: float | None) -> str:

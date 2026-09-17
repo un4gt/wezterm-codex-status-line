@@ -141,7 +141,7 @@ require("codex_statusline").setup({
 })
 ```
 
-`Cost` 使用当前模型价格估算整段会话。切换模型后会重新估算，结果不代表实际账单。价格匹配规则见[配置选项](../reference/settings.md#费用与自定义模型价格)，计算方法见[Token 与费用](./display-and-data.md#token-与费用)。
+`Cost` 按各次请求使用的模型分别累计，切换模型不会改变此前用量的价格归属。修改某个模型的单价会更新该模型对应的估算费用，结果不代表实际账单。价格匹配规则见[配置选项](../reference/settings.md#费用与自定义模型价格)，计算方法见[Token 与费用](./display-and-data.md#token-与费用)。
 
 ## 自定义配置路径
 

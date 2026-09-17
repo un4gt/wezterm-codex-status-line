@@ -51,8 +51,9 @@ export default function ModelPricing({pricing, onChange}: {
         修改后随配置一起导出。
       </p>
       <p className={styles.description}>
-        Cost 按当前模型单价估算整段会话：普通输入 × 输入价 ＋ 缓存输入 × 缓存价 ＋ 输出 × 输出价。
-        切换模型会重新估算；未包含长上下文、加速、缓存写入及工具费用，也不代表订阅账单。
+        Cost 按各次请求使用的模型分别累计：普通输入 × 输入价 ＋ 缓存输入 × 缓存价 ＋ 输出 × 输出价。
+        此预览使用单一模型的模拟用量，切换模型会更新示例费用。
+        估算未包含长上下文、加速、缓存写入及工具费用，也不代表订阅账单。
       </p>
       <div className={styles.tableScroll}>
         <table className={styles.table}>

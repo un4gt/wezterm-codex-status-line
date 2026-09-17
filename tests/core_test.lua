@@ -496,4 +496,92 @@ do
   assert_equal(settings.model, "gpt-test", "thread settings extraction")
 end
 
+do
+  local pricing = require("codex_statusline.domain.pricing")
+  local function context(history, model)
+    core.record_cost_usage(history, { type = "turn_context", payload = { model = model } })
+  end
+  local function counts(input, cached, output)
+    return { input_tokens = input, cached_input_tokens = cached, output_tokens = output }
+  end
+  local function usage(history, total, last)
+    core.record_cost_usage(history, { type = "event_msg", payload = {
+      type = "token_count", info = { total_token_usage = total, last_token_usage = last },
+    } })
+  end
+  local function cost(history, model, overrides)
+    return pricing.cost_text(pricing.estimate(model, {
+      by_model = history.by_model, cost_complete = history.complete,
+    }, overrides))
+  end
+  local history = core.new_cost_history()
+  local first = counts(1000000, 800000, 100000)
+  local second = counts(2000000, 1600000, 200000)
+  context(history, "gpt-5.6-sol")
+  usage(history, first, first)
+  assert_equal(cost(history, "gpt-5.6-sol"), "Cost ~$3.12", "first model cost")
+  -- Changing the selected model while a request finishes must not reattribute it.
+  core.record_cost_usage(history, { type = "event_msg", payload = {
+    type = "thread_settings_applied", thread_settings = { model = "gpt-6-astra" },
+  } })
+  usage(history, second, first)
+  assert_equal(cost(history, "gpt-6-astra"), "Cost ~$6.24", "in-flight request uses its turn model")
+  context(history, "gpt-6-astra")
+  usage(history, second, first)
+  assert_equal(history.by_model["gpt-6-astra"], nil, "repeated totals add no usage after switch")
+  assert_equal(cost(history, "unknown"), "Cost ~$6.24", "selected model never reprices past usage")
+  usage(history, counts(3000000, 2400000, 300000), first)
+  assert_equal(cost(history, "gpt-6-astra"), "Cost ~$14.04", "different model costs accumulate")
+  context(history, "gpt-5.6-sol")
+  usage(history, counts(4000000, 3200000, 400000), first)
+  assert_equal(cost(history, "gpt-5.6-sol"), "Cost ~$17.16", "switching back retains both models")
+  assert_equal(cost(history, "gpt-5.6-sol", { models = {
+    ["gpt-5.6-sol"] = { input = 0, cached_input = 0, output = 0 },
+  } }), "Cost ~$7.80", "custom price changes only its model subtotal")
+
+  local unknown = core.new_cost_history()
+  usage(unknown, first, first)
+  context(unknown, "gpt-5.6-sol")
+  usage(unknown, second, first)
+  assert_equal(cost(unknown, "gpt-5.6-sol"), "Cost —", "missing historical model is not guessed")
+
+  local inherited = core.new_cost_history()
+  context(inherited, "gpt-5.6-sol")
+  usage(inherited, second, first)
+  assert_equal(cost(inherited, "gpt-5.6-sol"), "Cost —", "unrecorded prefix is not billed at first visible model")
+
+  local reset = core.new_cost_history()
+  context(reset, "gpt-5.6-sol")
+  usage(reset, first, first)
+  usage(reset, counts(100, 0, 10), counts(100, 0, 10))
+  assert_equal(cost(reset, "gpt-5.6-sol"), "Cost —", "counter reset never subtracts past cost")
+
+  local missing = core.new_cost_history()
+  context(missing, "gpt-5.6-sol")
+  usage(missing, nil, first)
+  assert_equal(cost(missing, "gpt-5.6-sol"), "Cost —", "last usage alone cannot deduplicate requests")
+
+  local no_price = core.new_cost_history()
+  context(no_price, "custom-model")
+  usage(no_price, first, first)
+  context(no_price, "gpt-5.6-sol")
+  usage(no_price, second, first)
+  assert_equal(cost(no_price, "gpt-5.6-sol"), "Cost —", "unknown historical price hides incomplete total")
+  assert_equal(cost(no_price, "gpt-5.6-sol", { models = {
+    ["custom-model"] = { input = 4, cached_input = 0.4, output = 20 },
+  } }), "Cost ~$6.24", "adding a missing price resolves historical cost")
+
+  local collaboration = core.new_cost_history()
+  core.record_cost_usage(collaboration, { type = "turn_context", payload = {
+    collaboration_mode = { settings = { model = "gpt-5.6-sol" } },
+  } })
+  usage(collaboration, first, first)
+  assert_equal(cost(collaboration, "gpt-6-astra"), "Cost ~$3.12", "collaboration model fallback")
+  core.record_cost_usage(collaboration, { type = "turn_context", payload = {
+    model = "gpt-6-astra", collaboration_mode = { settings = { model = "gpt-5.6-sol" } },
+  } })
+  usage(collaboration, second, first)
+  assert_equal(cost(collaboration, "gpt-5.6-sol"), "Cost ~$10.92", "actual request model precedes selection")
+end
+
 return true

@@ -1,5 +1,5 @@
 import packageInfo from '../packages/npm/package.json';
-import {cacheRate, costText, estimateCost, isModelPrice, usageCounts, validPriceModel, type PricingConfig} from './pricing';
+import {cacheRate, costText, estimateCost, isModelPrice, usageCounts, validPriceModel, type PricingConfig, type TokenUsage} from './pricing';
 
 export const versionText = `v${packageInfo.version}`;
 
@@ -169,12 +169,8 @@ export interface PreviewState {
   task_progress?: {completed?: number; total?: number};
   codex_version?: string;
   waiting?: string;
-  usage?: {
+  usage?: TokenUsage & {
     total?: number;
-    input?: number;
-    input_raw?: number;
-    cached?: number;
-    output?: number;
     reasoning?: number;
     context_remaining_percent?: number;
     context_tokens?: number;

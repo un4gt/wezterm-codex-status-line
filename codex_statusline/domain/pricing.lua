@@ -54,13 +54,28 @@ function M.cache_rate(usage)
   return math.floor(counts.cached / counts.input * 1000 + 0.5) / 10
 end
 
-function M.estimate(model, usage, pricing)
+local function estimate_model(model, usage, pricing)
   local price = M.resolve(model, pricing)
   local counts = M.usage_counts(usage)
   if not price or counts.input == nil or counts.output == nil then return nil end
   local cost = ((counts.input - counts.cached) * price.input + counts.cached * price.cached_input
     + counts.output * price.output) / 1000000
   return finite(cost) and cost or nil
+end
+
+function M.estimate(model, usage, pricing)
+  if usage.cost_complete == false then return nil end
+  if type(usage.by_model) == "table" then
+    local cost = 0
+    for usage_model, counts in pairs(usage.by_model) do
+      local subtotal = estimate_model(usage_model, counts, pricing)
+      if subtotal == nil then return nil end
+      cost = cost + subtotal
+    end
+    return finite(cost) and cost or nil
+  end
+  -- Static previews can still describe a single model without a rollout history.
+  return estimate_model(model, usage, pricing)
 end
 
 function M.cost_text(cost)
