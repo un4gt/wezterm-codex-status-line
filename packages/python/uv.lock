@@ -438,7 +438,7 @@ wheels = [
 
 [[package]]
 name = "wezterm-codex-status-line"
-version = "0.1.1"
+version = "0.1.2"
 source = { editable = "." }
 dependencies = [
     { name = "jsonschema" },
