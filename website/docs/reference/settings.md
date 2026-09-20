@@ -37,7 +37,7 @@ description: 查询状态栏配置选项、默认值和取值范围。
 | `bottom_pane.prevent_focus` | `true` | 创建或点击状态栏后，将焦点返回 Codex 窗格 |
 | `git.enabled` | `true` | 查询 Git 根目录和当前分支 |
 | `git.cache_ttl_seconds` | `5` | Git 信息缓存时间 |
-| `title_bridge.enabled` | `true` | 从窗格标题读取推理强度 |
+| `title_bridge.enabled` | `true` | 从窗格标题读取模型和推理强度 |
 | `title_bridge.app_name` | `codex` | 终端标题中的应用名 |
 
 `title_bridge.enabled` 控制是否读取标题。要让 Codex 生成对应标题，先按[安装指南](../getting-started/installation.md#启用终端标题)启用终端标题。

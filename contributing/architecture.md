@@ -65,8 +65,8 @@ session 索引用于定位候选 rollout，并按较长 TTL 缓存；它不会�
 
 | 数据 | 首选来源 | 回退来源 |
 | --- | --- | --- |
-| model | 最新 turn context | user var 或 Codex 配置 |
-| reasoning | 有效 terminal title | turn context、user var 或 Codex 配置 |
+| model | 有效 terminal title | thread settings、turn context、user var 或 Codex 配置 |
+| reasoning | 有效 terminal title | thread settings、turn context、user var 或 Codex 配置 |
 | provider | rollout session metadata | user var 或 Codex 配置 |
 | CWD | rollout session metadata | 当前 pane CWD |
 | Git branch | 对当前 CWD 执行本地 Git 查询 | rollout 启动 metadata |
@@ -85,10 +85,10 @@ git -C <pane-cwd> branch --show-current
 启用 title bridge 后，Codex 会为新会话生成类似标题：
 
 ```text
-codex | high | app
+codex | gpt-5.6-sol | high | app
 ```
 
-Lua 解析 app name、reasoning 与 project 部分。MCP 子进程可能临时改变控制台标题；只要进程树仍确认 Codex 活跃，标题变化本身不会被视为退出。
+Lua 解析 app name、model、reasoning 与 project 部分，并兼容不含 model 的旧标题。`/model` 切换后优先显示标题中的模型和推理强度，不必等待 rollout 写入新的设置或 turn context；标题临时不可用时回退到会话记录。MCP 子进程可能临时改变控制台标题；只要进程树仍确认 Codex 活跃，标题变化本身不会被视为退出。
 
 ## 8. 状态 pane 生命周期
 

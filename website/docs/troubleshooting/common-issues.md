@@ -91,6 +91,12 @@ npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/
 
 会话已关联，但还未收到 Token 用量。发送一条消息并等待 Codex 返回。仅打开会话选择器不会产生用量数据。
 
+## `/model` 切换后仍显示旧模型
+
+启用[终端标题桥](../getting-started/installation.md#启用终端标题)，让状态栏在发送下一条消息之前读取新模型。仅依赖会话记录时，需要等待 Codex 将变化写入日志。
+
+已启用标题桥的 Windows 用户运行 `update --title-bridge`，重新加载 WezTerm 配置，再启动或恢复 Codex 会话。标题应类似 `codex | gpt-5.6-sol | high | app`；旧的三段标题只能实时提供推理强度。
+
 ## 配置导入后没有变化
 
 先确认已经用 `configure --from <文件路径>` 将下载的 JSON 导入本机，并重新加载 WezTerm 配置。

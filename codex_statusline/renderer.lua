@@ -109,6 +109,7 @@ function M.new(wezterm, opts, git, adapter)
       local settings = pane_state and pane_state.thread_settings or nil
       local collaboration = turn_context and turn_context.collaboration_mode or nil
       local model = first_scalar(
+        codex_info.live_model,
         type(settings) == "table" and settings.model or nil,
         type(collaboration) == "table" and collaboration.settings and collaboration.settings.model or nil,
         turn_context and turn_context.model or nil

@@ -54,7 +54,7 @@ const ASSET_NAMES = [
   'codex_statusline/lifecycle.lua',
   'codex_statusline.lua',
 ] as const;
-const TITLE_VALUE = ['app-name', 'reasoning', 'project-name'];
+const TITLE_VALUE = ['app-name', 'model', 'reasoning', 'project-name'];
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 const BOOLEAN_FLAGS = new Set([
   '--dry-run', '--force', '--help', '--json', '--no-color', '--no-powerline',
@@ -330,7 +330,7 @@ async function enableTitleBridge(codexHome: string, existing?: any) {
     }
     const after = titleState(await request('config/read', {includeLayers: true}), codexHome);
     if (JSON.stringify(after.value) !== JSON.stringify(TITLE_VALUE)) throw new CliError('Codex did not persist tui.terminal_title');
-    return existing?.enabled ? {...existing, version_after: after.version} : {
+    return existing?.enabled ? {...existing, installed_value: TITLE_VALUE, version_after: after.version} : {
       enabled: true,
       key_path: 'tui.terminal_title',
       config_file: after.file,

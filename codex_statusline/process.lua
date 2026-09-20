@@ -192,6 +192,7 @@ function M.new(wezterm, config)
       lifecycle = lifecycle,
       model = model,
       thinking = thinking,
+      live_model = title_signal and title_signal.model or nil,
       live_reasoning = title_signal and title_signal.reasoning or nil,
       provider = provider,
       service_tier = service_tier,

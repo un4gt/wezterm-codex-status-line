@@ -473,7 +473,7 @@ class BridgeTests(unittest.TestCase):
             subprocess.run(command, env=env, check=True, capture_output=True, text=True)
 
             installed = read_fake_codex_state(state_path)
-            self.assertEqual(installed["value"], ["app-name", "reasoning", "project-name"])
+            self.assertEqual(installed["value"], ["app-name", "model", "reasoning", "project-name"])
             self.assertEqual(len(installed["writes"]), 1)
             self.assertFalse(installed["writes"][0]["reloadUserConfig"])
             manifest = json.loads(
@@ -486,6 +486,27 @@ class BridgeTests(unittest.TestCase):
             subprocess.run(command, env=env, check=True, capture_output=True, text=True)
             self.assertEqual(len(read_fake_codex_state(state_path)["writes"]), 1)
 
+            # Simulate an existing installation with the original three-field title.
+            legacy = ["app-name", "reasoning", "project-name"]
+            previous = read_fake_codex_state(state_path)
+            previous["value"] = legacy
+            previous["conflicts_remaining"] = 1
+            state_path.write_text(json.dumps(previous), encoding="utf-8")
+            title_record["installed_value"] = legacy
+            manifest_path = home / "wezterm-statusline" / "bridge.json"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            subprocess.run(command, env=env, check=True, capture_output=True, text=True)
+            upgraded = read_fake_codex_state(state_path)
+            expected = ["app-name", "model", "reasoning", "project-name"]
+            self.assertEqual(upgraded["value"], expected)
+            self.assertEqual(len(upgraded["writes"]), 2)
+            upgraded_record = json.loads(manifest_path.read_text(encoding="utf-8-sig"))["codex_title_bridge"]
+            self.assertEqual(upgraded_record["installed_value"], expected)
+            self.assertEqual(upgraded_record["original_value"], ["thread-title"])
+            self.assertEqual(upgraded_record["version_before"], title_record["version_before"])
+            subprocess.run(command, env=env, check=True, capture_output=True, text=True)
+            self.assertEqual(len(read_fake_codex_state(state_path)["writes"]), 2)
+
             uninstall = command.copy()
             uninstall.remove("-EnableCodexTitleBridge")
             uninstall[uninstall.index("-Install")] = "-Uninstall"
@@ -493,7 +514,7 @@ class BridgeTests(unittest.TestCase):
             restored = read_fake_codex_state(state_path)
             self.assertTrue(restored["present"])
             self.assertEqual(restored["value"], ["thread-title"])
-            self.assertEqual(len(restored["writes"]), 2)
+            self.assertEqual(len(restored["writes"]), 3)
 
     @unittest.skipUnless(shutil.which("powershell.exe"), "Windows PowerShell unavailable")
     def test_windows_title_bridge_removes_added_value_after_version_retry(self) -> None:
@@ -530,7 +551,7 @@ class BridgeTests(unittest.TestCase):
             subprocess.run(command, env=env, check=True, capture_output=True, text=True)
             installed = read_fake_codex_state(state_path)
             self.assertEqual(installed["conflicts_remaining"], 0)
-            self.assertEqual(installed["value"], ["app-name", "reasoning", "project-name"])
+            self.assertEqual(installed["value"], ["app-name", "model", "reasoning", "project-name"])
 
             uninstall = command.copy()
             uninstall.remove("-EnableCodexTitleBridge")
@@ -581,6 +602,11 @@ class BridgeTests(unittest.TestCase):
             changed["version_counter"] = int(changed["version_counter"]) + 1
             changed["version"] = f"v{changed['version_counter']}"
             state_path.write_text(json.dumps(changed), encoding="utf-8")
+
+            update = subprocess.run(command, env=env, capture_output=True, text=True)
+            self.assertNotEqual(update.returncode, 0)
+            self.assertIn("refusing to overwrite", update.stdout + update.stderr)
+            self.assertEqual(read_fake_codex_state(state_path)["value"], changed["value"])
 
             uninstall = command.copy()
             uninstall.remove("-EnableCodexTitleBridge")

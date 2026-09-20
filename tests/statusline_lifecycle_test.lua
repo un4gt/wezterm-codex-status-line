@@ -20,6 +20,25 @@ local version_text = require("codex_statusline.version").text
 local suffix = "   " .. version_text .. " "
 eq(line:sub(-#suffix), suffix, "project icon followed by installed plugin version")
 
+-- /model can update the title before the rollout has any new records.
+local pane_data = h.wezterm.GLOBAL.codex_statusline_state.panes[tostring(h.main.id)]
+pane_data.turn_context = { model = "gpt-6-astra", effort = "max" }
+pane_data.thread_settings = { model = "gpt-6-astra", reasoning_effort = "max" }
+h.main.title = "codex | gpt-5.6-sol | high | app"
+h:tick()
+contains(status.last_output, "gpt-5.6-sol", "idle model switch overrides stale rollout settings")
+assert(not status.last_output:find("gpt-6-astra", 1, true), "old model is no longer displayed")
+contains(status.last_output, "high", "idle model switch carries its reasoning")
+eq(pane_data.turn_context.model, "gpt-6-astra", "live title does not rewrite request history")
+eq(pane_data.thread_settings.model, "gpt-6-astra", "model updates without a new rollout event")
+h.main.title = "codex | gpt-6-astra | max | app"
+h:tick()
+contains(status.last_output, "gpt-6-astra", "second idle switch updates immediately")
+h.main.title = "pwsh.exe"
+h:tick()
+contains(status.last_output, "gpt-6-astra", "missing title falls back to the rollout")
+pane_data.turn_context, pane_data.thread_settings = nil, nil
+
 h.main.title = "codex | max | app"
 h:tick()
 contains(status.last_output, "max", "live title reasoning")

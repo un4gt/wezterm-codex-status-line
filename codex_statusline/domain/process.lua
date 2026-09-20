@@ -189,13 +189,23 @@ end
 function M.parse_codex_terminal_title(value, app_name)
   local expected_app = (trim(app_name) or "codex"):lower()
   local parts = split_title_parts(value)
+  local efforts = { none = true, minimal = true, low = true, medium = true,
+    high = true, xhigh = true, max = true, ultra = true, default = true }
   for index, part in ipairs(parts) do
     if part and part:lower() == expected_app then
-      local reasoning = trim(parts[index + 1])
-      local project = trim(parts[index + 2])
-      if reasoning and project and not reasoning:find("[%c]") then
+      local model = trim(parts[index + 1])
+      local reasoning = trim(parts[index + 2])
+      local project = trim(parts[index + 3])
+      if not (model and reasoning and efforts[reasoning:lower()] and project) then
+        -- Older installations only include app, reasoning and project.
+        model = nil
+        reasoning = trim(parts[index + 1])
+        project = trim(parts[index + 2])
+      end
+      if reasoning and efforts[reasoning:lower()] and project and not (model and model:find("[%c]")) then
         return {
           app_name = part,
+          model = model,
           reasoning = reasoning:lower(),
           project = project,
           part_index = index,

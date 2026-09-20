@@ -25,7 +25,7 @@ from .render import SEGMENT_IDS, build_render_plan
 
 
 app = typer.Typer(add_completion=False, invoke_without_command=True, no_args_is_help=False)
-TITLE_VALUE = ["app-name", "reasoning", "project-name"]
+TITLE_VALUE = ["app-name", "model", "reasoning", "project-name"]
 HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 ASSET_NAMES = [
     "codex_statusline_bridge.ps1",
@@ -333,7 +333,7 @@ def enable_title_bridge(state: State, existing: dict[str, Any] | None) -> dict[s
         if after["value"] != TITLE_VALUE:
             raise CliFailure("Codex did not persist tui.terminal_title")
         if existing and existing.get("enabled"):
-            return {**existing, "version_after": after["version"]}
+            return {**existing, "installed_value": TITLE_VALUE, "version_after": after["version"]}
         return {"enabled": True, "key_path": "tui.terminal_title", "config_file": after["file"], "original_present": before["present"], "original_value": before["value"], "installed_value": TITLE_VALUE, "version_before": before["version"], "version_after": after["version"]}
     finally:
         client.close()

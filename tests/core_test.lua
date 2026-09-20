@@ -128,6 +128,17 @@ do
   local signal = core.parse_codex_terminal_title("codex | max | wezterm-codex-status-line")
   assert_equal(signal.reasoning, "max", "terminal title reasoning")
   assert_equal(signal.project, "wezterm-codex-status-line", "terminal title project")
+  assert_equal(signal.model, nil, "legacy title has no model")
+
+  signal = core.parse_codex_terminal_title("codex | gpt-6-astra | max | app")
+  assert_equal(signal.model, "gpt-6-astra", "terminal title model")
+  assert_equal(signal.reasoning, "max", "model title reasoning")
+  assert_equal(signal.project, "app", "model title project")
+
+  signal = core.parse_codex_terminal_title("[ ! ] Action Required | codex | provider/custom-model | HIGH | app")
+  assert_equal(signal.model, "provider/custom-model", "custom model in action title")
+  assert_equal(signal.reasoning, "high", "new action title reasoning")
+  assert_equal(core.parse_codex_terminal_title("codex | gpt-6-astra | max"), nil, "incomplete model title")
 
   signal = core.parse_codex_terminal_title("[ ! ] Action Required | codex | HIGH | app")
   assert_equal(signal.reasoning, "high", "action title reasoning")

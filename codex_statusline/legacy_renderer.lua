@@ -15,7 +15,8 @@ function M.new(wezterm, opts, git, formatting)
     local function build_legacy_lines(opts, codex_info, pane_state, cols)
       local meta = pane_state and pane_state.session_meta or nil
       local turn_context = pane_state and pane_state.turn_context or nil
-      local model = turn_context and trim(turn_context.model) or nil
+      local model = trim(codex_info.live_model)
+      model = model or (turn_context and trim(turn_context.model) or nil)
       model = model or trim(codex_info.model)
       local thinking = trim(codex_info.live_reasoning)
       thinking = thinking or (turn_context and trim(turn_context.effort or turn_context.model_reasoning_effort) or nil)

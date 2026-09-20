@@ -45,7 +45,7 @@ $BridgeAssets = @(
   'codex_statusline_bridge.js'
 )
 $CodexTitleKeyPath = 'tui.terminal_title'
-$CodexTitleInstalledValue = @('app-name', 'reasoning', 'project-name')
+$CodexTitleInstalledValue = @('app-name', 'model', 'reasoning', 'project-name')
 
 function Get-UserHome {
   if ($UserHome) {
@@ -512,16 +512,11 @@ function Enable-CodexTitleBridgeConfig {
         if (-not (Test-JsonValueEqual $state.EffectiveValue $expectedInstalled)) {
           throw 'tui.terminal_title is overridden by another Codex configuration layer.'
         }
-        $record = New-CodexTitleBridgeRecord `
-          -OriginalPresent ([bool]$ExistingRecord.original_present) `
-          -OriginalValue $ExistingRecord.original_value `
-          -ConfigFile $state.ConfigFile `
-          -VersionBefore ([string]$ExistingRecord.version_before) `
-          -VersionAfter $state.Version
-        return $record
-      }
-
-      if (-not $originalCaptured) {
+        $originalCaptured = $true
+        $originalPresent = [bool]$ExistingRecord.original_present
+        $originalValue = $ExistingRecord.original_value
+        $versionBefore = [string]$ExistingRecord.version_before
+      } elseif (-not $originalCaptured) {
         $originalCaptured = $true
         $originalPresent = [bool]$state.Present
         $originalValue = $state.Value
@@ -539,8 +534,8 @@ function Enable-CodexTitleBridgeConfig {
       }
       if (-not (Test-JsonValueEqual $verified.EffectiveValue $CodexTitleInstalledValue)) {
         $restoreValue = $null
-        if ($originalPresent) {
-          $restoreValue = $originalValue
+        if ($state.Present) {
+          $restoreValue = $state.Value
         }
         $null = Write-CodexTitleValue -Client $client -State $verified -Value $restoreValue
         throw 'tui.terminal_title is overridden by another Codex configuration layer.'

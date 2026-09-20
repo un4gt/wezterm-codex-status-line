@@ -48,7 +48,7 @@ uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/
 
 ## 启用终端标题
 
-终端标题可以让状态栏及时显示推理强度的变化。Windows 用户可将安装命令末尾的 `--no-title-bridge` 替换为 `--title-bridge` 来启用此功能。
+终端标题可以让状态栏在 `/model` 切换后及时显示模型和推理强度，无需发送新消息。Windows 用户可将安装命令末尾的 `--no-title-bridge` 替换为 `--title-bridge` 来启用此功能。
 
 macOS 和 Linux 请保留 `--no-title-bridge`。这两个平台暂不支持自动配置 Codex 终端标题。
 
@@ -56,10 +56,10 @@ macOS 和 Linux 请保留 `--no-title-bridge`。这两个平台暂不支持自�
 
 ```toml title="$CODEX_HOME/config.toml"
 [tui]
-terminal_title = ["app-name", "reasoning", "project-name"]
+terminal_title = ["app-name", "model", "reasoning", "project-name"]
 ```
 
-新配置从下一次 Codex 会话开始生效。关闭此功能时，状态栏仍可读取会话记录中的模型、推理强度和用量。卸载时的标题恢复规则见[本地文件与数据](../reference/security-and-files.md#终端标题)。
+新配置从下一次 Codex 会话开始生效。已启用旧标题桥的用户运行 `update --title-bridge` 后，安装器会补上模型字段，并保留卸载时需要恢复的原始标题配置。关闭此功能时，状态栏仍可读取会话记录中的模型、推理强度和用量。卸载时的标题恢复规则见[本地文件与数据](../reference/security-and-files.md#终端标题)。
 
 ## 自定义目录
 
