@@ -10,7 +10,7 @@ slug: /
 WezTerm Codex Status Line 在每个 Codex 窗格下方显示独立的状态栏。你可以查看模型、推理强度、工作目录、Git 分支，以及上下文和 Token 用量。
 
 ```text
-CODEX | gpt-5.6-sol | high | ~/src/app | main | Ctx 72% left | ↑10M ↓204K | Cache 60% | Cost ~$22.48 |  v0.1.0
+CODEX | gpt-5.6-sol | high | ~/src/app | main | Ctx 72% left | ↑10M ↓204K | Cache 60% | Cost ~$22.48 |  v0.1.1
 ```
 
 状态栏支持 26 个可配置字段，以及颜色、图标和一行或两行布局。窗口变窄时，会自动缩短或隐藏部分字段。数据来自本地 Codex 会话记录，运行时无需网络请求。

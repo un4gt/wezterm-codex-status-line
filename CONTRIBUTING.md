@@ -112,7 +112,13 @@ python scripts/test_remote_packages.py
 
 ## 发布
 
-`release.yml` 构建并校验 npm tarball、Python wheel 和源码包。标签需与两个包的版本一致，发布说明位于 `release-notes/<tag>.md`。
+`release.yml` 只响应 `v` 加版本号的标签推送，例如 `v0.1.1`。发布前会严格校验 `v<major>.<minor>.<patch>` 格式、两个包的版本与发布说明 `release-notes/<tag>.md`；普通分支推送不会发布包。
+
+首次发布前，在 PyPI 账户的 Publishing 页面创建 Pending Trusted Publisher：项目名 `wezterm-codex-status-line`，GitHub owner `un4gt`，repository `wezterm-codex-status-line`，workflow `release.yml`，environment `pypi`。工作流通过 OIDC 发布，不需要 PyPI token。
+
+工作流构建和测试 npm tarball、Python wheel 与源码包，校验归档资源并验证隔离安装，然后发布 PyPI。PyPI 成功后创建正式 GitHub Release，并附上全部安装包。npm registry 暂不发布，npx 继续使用 GitHub Release 的 tarball。
+
+发布时先提交并推送版本更新，确认 CI 通过，再创建和推送对应标签。已有标签和注册表版本不覆盖；失败的工作流修复后使用适当的新版本，或在无需改代码时重新运行失败的 job。
 
 `deploy-docs.yml` 在 `main` 的网站及相关资源更新时部署 GitHub Pages。推送前运行 `git diff --check` 和与修改相关的检查。
 

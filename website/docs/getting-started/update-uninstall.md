@@ -11,22 +11,20 @@ import TabItem from '@theme/TabItem';
 
 ## 更新
 
-从 [Releases](https://github.com/un4gt/wezterm-codex-status-line/releases) 选择目标版本，将其安装命令中的 `install --no-title-bridge` 替换为 `update`。
-
-下面以 v0.1.0 为例：
+uvx 使用 `--refresh` 获取 PyPI 上的最新版本。npx 从 [Releases](https://github.com/un4gt/wezterm-codex-status-line/releases) 选择目标版本；下面的 npx 命令以 v0.1.1 为例：
 
 <Tabs groupId="installer">
 <TabItem value="npx" label="npx">
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line update
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line update
 ```
 
 </TabItem>
 <TabItem value="uvx" label="uvx">
 
 ```sh
-uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line update
+uvx --refresh wezterm-codex-status-line update
 ```
 
 </TabItem>
@@ -34,7 +32,7 @@ uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/
 
 `update` 保留显示配置和终端标题设置。完成后重新加载 WezTerm 配置，再运行 `doctor` 检查安装。
 
-命令中的下载地址决定目标版本。重复使用 v0.1.0 的地址会重新安装 v0.1.0。
+npx 命令中的下载地址决定目标版本。重复使用 v0.1.1 的地址会重新安装 v0.1.1。uvx 也可用 `uvx wezterm-codex-status-line@0.1.1 update` 指定版本。
 
 ## 卸载
 
@@ -50,14 +48,14 @@ require("codex_statusline").setup()
 <TabItem value="npx" label="npx">
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line uninstall
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line uninstall
 ```
 
 </TabItem>
 <TabItem value="uvx" label="uvx">
 
 ```sh
-uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line uninstall
+uvx wezterm-codex-status-line uninstall
 ```
 
 </TabItem>
@@ -76,7 +74,7 @@ uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/
 在 `install`、`configure`、`update` 或 `uninstall` 后添加 `--dry-run`，可以查看操作结果而不写入文件：
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line update --dry-run
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line update --dry-run
 ```
 
 自定义安装目录需要继续传入相同的 `--wezterm-module-dir` 等路径选项。完整参数见[命令行参考](../guides/cli-reference.md)。

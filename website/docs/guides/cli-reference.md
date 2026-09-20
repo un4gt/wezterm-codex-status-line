@@ -17,13 +17,13 @@ wezterm-codex-status-line [全局选项] <命令> [命令选项]
 全局选项放在子命令之前。例如，输出 JSON 格式的检查结果：
 
 ```bash
-uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line --json doctor
+uvx wezterm-codex-status-line --json doctor
 ```
 
 使用 npx 时，第一个 `--yes` 属于 npx，用于跳过包执行确认：
 
 ```powershell
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line doctor
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line doctor
 ```
 
 ## 全局选项
@@ -41,7 +41,7 @@ npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/
 npx 如需把 `--yes` 传给本项目 CLI，需要在包名之后再写一次：
 
 ```powershell
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line --yes install
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line --yes install
 ```
 
 自动化安装更推荐直接使用 `install --title-bridge` 或 `install --no-title-bridge`。

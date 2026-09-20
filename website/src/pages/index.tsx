@@ -23,8 +23,8 @@ import HomepageFeatures from '@site/src/components/HomepageFeatures';
 
 import styles from './index.module.css';
 
-const npxInstallCommand = 'npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line install --no-title-bridge';
-const uvxInstallCommand = 'uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line install --no-title-bridge';
+const npxInstallCommand = 'npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line install --no-title-bridge';
+const uvxInstallCommand = 'uvx wezterm-codex-status-line install --no-title-bridge';
 
 const documentRoutes = [
   {
@@ -128,7 +128,7 @@ function HomepageHeader(): ReactNode {
         <div className={styles.metaLine}>
           <span className={styles.liveState}>
             <span aria-hidden="true" />
-            v0.1.0
+            v0.1.1
           </span>
           <span className={styles.metaDivider} />
           <span className={styles.metaTag}>WezTerm</span>

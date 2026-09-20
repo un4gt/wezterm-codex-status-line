@@ -415,7 +415,7 @@ class BridgeTests(unittest.TestCase):
                 (home / "wezterm-statusline" / "bridge.json").read_text(encoding="utf-8-sig")
             )
             self.assertEqual(manifest["schema"], 4)
-            self.assertEqual(manifest["package"]["version"], "0.1.0")
+            self.assertEqual(manifest["package"]["version"], json.loads((ROOT / "packages/npm/package.json").read_text(encoding="utf-8"))["version"])
             self.assertEqual(Path(manifest["wezterm_module_dir"]).resolve(), module_dir.resolve())
             self.assertTrue((bridge_bin / "codex_statusline_bridge.js").exists())
 

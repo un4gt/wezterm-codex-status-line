@@ -46,14 +46,14 @@ return config
 <TabItem value="npx" label="npx">
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line doctor
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line doctor
 ```
 
 </TabItem>
 <TabItem value="uvx" label="uvx">
 
 ```sh
-uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line doctor
+uvx wezterm-codex-status-line doctor
 ```
 
 </TabItem>

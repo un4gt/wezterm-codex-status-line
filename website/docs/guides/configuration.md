@@ -21,14 +21,14 @@ import TabItem from '@theme/TabItem';
 <TabItem value="npx" label="npx">
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure --from ./codex_statusline_config.json
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line configure --from ./codex_statusline_config.json
 ```
 
 </TabItem>
 <TabItem value="uvx" label="uvx">
 
 ```sh
-uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line configure --from ./codex_statusline_config.json
+uvx wezterm-codex-status-line configure --from ./codex_statusline_config.json
 ```
 
 </TabItem>
@@ -54,14 +54,14 @@ uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/
 <TabItem value="npx" label="npx">
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line configure
 ```
 
 </TabItem>
 <TabItem value="uvx" label="uvx">
 
 ```sh
-uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line configure
+uvx wezterm-codex-status-line configure
 ```
 
 </TabItem>
@@ -72,7 +72,7 @@ uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/
 也可以直接提供参数。例如，使用两行布局并修改标签：
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure --rows 2 --label CODEX
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line configure --rows 2 --label CODEX
 ```
 
 在命令末尾添加 `--dry-run`，可以先检查和预览结果。其他参数见[命令行参考](./cli-reference.md#configure)。
@@ -110,7 +110,7 @@ Lua 只需要填写要覆盖的选项。完整选项见[配置选项](../referen
 字体不包含 Powerline 或 Nerd Font 图标时，关闭 Powerline：
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure --no-powerline
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line configure --no-powerline
 ```
 
 如果项目图标仍显示异常，将预览页中的“项目图标”改成 `>_`。

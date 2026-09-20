@@ -11,7 +11,7 @@
 - 从本地 Codex 会话记录读取数据，无需额外调用模型。
 
 ```text
-CODEX | gpt-5.6-sol | high | ~/src/app | main | Ctx 72% left | ↑10M ↓204K | Cache 60% | Cost ~$22.48 |  v0.1.0
+CODEX | gpt-5.6-sol | high | ~/src/app | main | Ctx 72% left | ↑10M ↓204K | Cache 60% | Cost ~$22.48 |  v0.1.1
 ```
 
 ## 安装
@@ -19,16 +19,16 @@ CODEX | gpt-5.6-sol | high | ~/src/app | main | Ctx 72% left | ↑10M ↓204K | 
 使用 Node.js 20 或更高版本运行：
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line install --no-title-bridge
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line install --no-title-bridge
 ```
 
 或使用 uv：
 
 ```sh
-uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line install --no-title-bridge
+uvx wezterm-codex-status-line install --no-title-bridge
 ```
 
-两个命令从 [GitHub Releases](https://github.com/un4gt/wezterm-codex-status-line/releases/tag/v0.1.0) 安装相同版本，任选一个即可。Windows 安装需要 PowerShell 5.1 或更高版本。macOS 暂未完成实机验证；Linux 暂未完成 Wayland/X11 桌面验证。其他要求见[安装指南](https://un4gt.github.io/wezterm-codex-status-line/docs/getting-started/installation/)。
+uvx 从 PyPI 安装，npx 暂时从 [GitHub Releases](https://github.com/un4gt/wezterm-codex-status-line/releases/tag/v0.1.1) 安装，任选一个即可。Windows 安装需要 PowerShell 5.1 或更高版本。macOS 暂未完成实机验证；Linux 暂未完成 Wayland/X11 桌面验证。其他要求见[安装指南](https://un4gt.github.io/wezterm-codex-status-line/docs/getting-started/installation/)。
 
 在 WezTerm 配置的 `return config` 之前加入：
 
@@ -44,7 +44,7 @@ require("codex_statusline").setup()
 在[交互预览](https://un4gt.github.io/wezterm-codex-status-line/preview/)中调整显示内容，点击“下载 JSON”，然后导入文件：
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure --from ./codex_statusline_config.json
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line configure --from ./codex_statusline_config.json
 ```
 
 重新加载 WezTerm 配置以应用修改。配置默认保存在 `~/.config/wezterm/codex_statusline_config.json`，也可以通过 `setup({...})` 设置选项。完整步骤见[配置指南](https://un4gt.github.io/wezterm-codex-status-line/docs/guides/configuration/)。

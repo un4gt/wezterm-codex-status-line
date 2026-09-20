@@ -2,20 +2,14 @@ name: Release packages
 
 on:
   push:
-    tags: ["v*"]
-  workflow_dispatch:
-    inputs:
-      publish_registries:
-        description: "Publish the selected version tag to npm and PyPI (requires trusted publishers)"
-        type: boolean
-        default: false
+    tags: ["v[0-9]*"]
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
-env:
-  NPM_VERSION: "11.7.0"
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -27,15 +21,16 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: packages/npm/package-lock.json
-      - name: Use npm with trusted publishing support
-        run: npm install --global npm@${{ env.NPM_VERSION }}
       - uses: astral-sh/setup-uv@v6
         with:
           version: "0.9.17"
       - name: Verify tag and package versions
         shell: bash
         run: |
-          [[ "$GITHUB_REF" == refs/tags/v* ]] || { echo "Select a version tag, such as v0.1.0, to release."; exit 1; }
+          [[ "$GITHUB_REF_TYPE" == tag && "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "Publishing requires a version tag such as v0.1.1."
+            exit 1
+          }
           version="${GITHUB_REF_NAME#v}"
           test "$version" = "$(node -p "require('./packages/npm/package.json').version")"
           test "$version" = "$(grep '^version = ' packages/python/pyproject.toml | cut -d '"' -f 2)"
@@ -44,7 +39,7 @@ jobs:
       - working-directory: packages/npm
         run: npm ci && npm pack
       - working-directory: packages/python
-        run: uv build
+        run: uv sync --frozen && uv run python -m unittest discover -s tests -v && uv build
       - name: Verify package assets
         run: python3 scripts/verify-package-assets.py
       - name: Test remote package installation
@@ -52,33 +47,20 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: release-packages
+          if-no-files-found: error
           path: |
             packages/npm/*.tgz
             packages/python/dist/*
 
-  publish-npm:
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_registries
-    needs: build
-    runs-on: ubuntu-latest
-    environment: npm
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: release-packages
-          path: dist
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          registry-url: https://registry.npmjs.org
-      - name: Use npm with trusted publishing support
-        run: npm install --global npm@${{ env.NPM_VERSION }}
-      - run: npm publish dist/npm/*.tgz --access public --provenance
-
   publish-pypi:
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_registries
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
-    environment: pypi
+    environment:
+      name: pypi
+      url: https://pypi.org/p/wezterm-codex-status-line
+    permissions:
+      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -89,12 +71,10 @@ jobs:
           packages-dir: dist/python/dist/
 
   github-release:
-    if: >-
-      ${{ always() && !cancelled() && needs.build.result == 'success'
-          && (needs.publish-npm.result == 'success' || needs.publish-npm.result == 'skipped')
-          && (needs.publish-pypi.result == 'success' || needs.publish-pypi.result == 'skipped') }}
-    needs: [build, publish-npm, publish-pypi]
+    needs: [build, publish-pypi]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -105,8 +85,8 @@ jobs:
         with:
           generate_release_notes: true
           body_path: release-notes/${{ github.ref_name }}.md
-          prerelease: ${{ inputs.publish_registries != true || contains(github.ref_name, '-') }}
-          make_latest: ${{ inputs.publish_registries == true && !contains(github.ref_name, '-') }}
+          prerelease: false
+          make_latest: true
           fail_on_unmatched_files: true
           files: |
             dist/npm/*.tgz

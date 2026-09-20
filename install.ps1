@@ -8,7 +8,7 @@ param(
   [string]$WezTermModuleDir,
   [string]$SourceBaseUrl = 'https://raw.githubusercontent.com/un4gt/wezterm-codex-status-line/main',
   [string]$PackageName = 'wezterm-codex-status-line',
-  [string]$PackageVersion = '0.1.0',
+  [string]$PackageVersion = '0.1.1',
   [string]$InstallerRunner = 'powershell'
 )
 

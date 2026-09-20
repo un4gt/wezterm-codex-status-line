@@ -25,20 +25,20 @@ macOS 暂未完成实机验证；Linux 暂未完成 Wayland/X11 桌面验证。
 
 ## 运行安装命令
 
-以下命令从 [GitHub Releases](https://github.com/un4gt/wezterm-codex-status-line/releases/tag/v0.1.0) 安装 v0.1.0：
+选择一种方式安装：uvx 从 PyPI 下载，npx 暂时从 [GitHub Releases](https://github.com/un4gt/wezterm-codex-status-line/releases/tag/v0.1.1) 下载。
 
 <Tabs groupId="installer">
 <TabItem value="npx" label="npx">
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line install --no-title-bridge
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line install --no-title-bridge
 ```
 
 </TabItem>
 <TabItem value="uvx" label="uvx">
 
 ```sh
-uvx --from https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm_codex_status_line-0.1.0-py3-none-any.whl wezterm-codex-status-line install --no-title-bridge
+uvx wezterm-codex-status-line install --no-title-bridge
 ```
 
 </TabItem>
@@ -66,7 +66,7 @@ terminal_title = ["app-name", "model", "reasoning", "project-name"]
 默认安装目录为 `~/.config/wezterm`。如果 WezTerm 使用其他配置目录，在子命令之前传入 `--wezterm-module-dir`：
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line --wezterm-module-dir ./wezterm-config install --no-title-bridge
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line --wezterm-module-dir ./wezterm-config install --no-title-bridge
 ```
 
 该目录需要位于 WezTerm 的 Lua 模块搜索路径中。以后运行 `configure`、`doctor`、`update` 或 `uninstall` 时，也要传入同一路径。文件位置和环境变量见[本地文件与数据](../reference/security-and-files.md)。

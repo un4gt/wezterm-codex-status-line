@@ -5,7 +5,7 @@
 ## 安装
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line install --no-title-bridge
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line install --no-title-bridge
 ```
 
 安装后，在 WezTerm 配置的 `return config` 之前加入：
@@ -21,7 +21,7 @@ require("codex_statusline").setup()
 在[交互预览](https://un4gt.github.io/wezterm-codex-status-line/preview/)中调整显示并下载 JSON，然后导入：
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.0/wezterm-codex-status-line-0.1.0.tgz wezterm-codex-status-line configure --from ./codex_statusline_config.json
+npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line configure --from ./codex_statusline_config.json
 ```
 
 重新加载 WezTerm 配置以应用修改。完整步骤见[配置指南](https://un4gt.github.io/wezterm-codex-status-line/docs/guides/configuration/)。
