@@ -1,0 +1,34 @@
+{
+  "title": {
+    "message": "Codex Status Line",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "WezTerm Codex Status Line",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.文档": {
+    "message": "Docs",
+    "description": "Navbar item with label 文档"
+  },
+  "item.label.安装": {
+    "message": "Install",
+    "description": "Navbar item with label 安装"
+  },
+  "item.label.配置": {
+    "message": "Configure",
+    "description": "Navbar item with label 配置"
+  },
+  "item.label.预览": {
+    "message": "Preview",
+    "description": "Navbar item with label 预览"
+  },
+  "item.label.排障": {
+    "message": "Troubleshooting",
+    "description": "Navbar item with label 排障"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  }
+}

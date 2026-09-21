@@ -46,7 +46,7 @@ return config
 <TabItem value="npx" label="npx">
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line doctor
+npx --yes wezterm-codex-status-line@0.1.2 doctor
 ```
 
 </TabItem>

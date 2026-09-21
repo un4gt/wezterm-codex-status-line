@@ -8,7 +8,7 @@ description: 查看字段含义、布局规则、Token 统计和费用估算。
 
 状态栏提供 26 个可配置字段。在[交互预览](/preview)中，可以选择显示哪些字段、调整顺序并设置颜色。操作步骤见[配置状态栏](./configuration.md)。
 
-右侧的 `v0.1.1` 等文字表示插件版本。`codex_version` 字段表示 Codex CLI 版本。
+右侧的 `v0.1.2` 等文字表示插件版本。`codex_version` 字段表示 Codex CLI 版本。
 
 ## 全部 26 个字段
 

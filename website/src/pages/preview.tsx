@@ -1,6 +1,7 @@
 import type {ChangeEvent, CSSProperties, ReactNode} from 'react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import Link from '@docusaurus/Link';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
 import {
@@ -93,6 +94,69 @@ const activityLabelFields = [
   ['goal_budget_limited', 'Goal budget limited'],
   ['goal_complete', 'Goal complete'],
 ] as const;
+
+const englishText: Record<string, string> = {
+  '标识': 'Label', '固定状态栏前缀': 'Fixed status line prefix', '状态标识': 'Status label',
+  '模型': 'Model', '当前会话的模型': 'Current session model',
+  '推理强度': 'Reasoning effort', '当前推理强度': 'Current reasoning effort',
+  '特殊状态': 'Activity state', 'Review、Plan 或 Goal': 'Review, Plan, or Goal',
+  '模型服务商': 'Model provider', '当前模型服务商': 'Current model provider',
+  '人格设置': 'Personality', '当前人格配置': 'Current personality setting',
+  '服务等级': 'Service tier', '当前服务等级': 'Current service tier',
+  '工作目录': 'Working directory', '当前会话的工作目录': 'Current session working directory',
+  '项目名': 'Project name', 'Git 根目录名称': 'Git root directory name',
+  'Git 分支': 'Git branch', '当前分支': 'Current branch',
+  '沙箱权限': 'Sandbox permissions', '当前沙箱权限': 'Current sandbox permissions',
+  '审批策略': 'Approval policy', '当前审批策略': 'Current approval policy',
+  '上下文剩余': 'Context remaining', '剩余比例与容量条': 'Remaining percentage and meter',
+  '上下文已用': 'Context used', '已用上下文比例': 'Used context percentage',
+  '上下文窗口': 'Context window', '模型窗口上限': 'Model window limit',
+  '输入 / 输出': 'Input / output', '↑ 累计输入（含缓存） · ↓ 累计输出': '↑ Cumulative input (cached included) · ↓ Cumulative output',
+  '缓存率': 'Cache rate', '缓存输入占总输入的比例': 'Cached input divided by total input',
+  '估算费用': 'Estimated cost', '按各次请求使用的模型分别累计 Token 费用': 'Token cost accumulated per request model',
+  '输入 Token': 'Input tokens', '累计输入，包含缓存': 'Cumulative input, including cache',
+  '缓存 Token': 'Cached tokens', '累计缓存输入': 'Cumulative cached input',
+  '输出 Token': 'Output tokens', '累计输出': 'Cumulative output',
+  '推理 Token': 'Reasoning tokens', '累计推理输出': 'Cumulative reasoning output',
+  '会话 ID': 'Session ID', '会话 ID 前 8 位': 'First 8 characters of the session ID',
+  '任务进度': 'Task progress', '仅用于预览，实际会话不提供此字段': 'Preview only; live sessions do not provide this field',
+  'Codex 版本': 'Codex version', '当前 CLI 版本': 'Current CLI version',
+  '项目图标': 'Project icon', '固定在右侧插件版本号之前': 'Fixed before the plugin version on the right',
+  '进行中': 'Active', '已暂停': 'Paused', '已阻塞': 'Blocked', '用量受限': 'Usage limited', '预算受限': 'Budget limited', '已完成': 'Complete',
+  '链接中的配置无效，已使用默认配置。': 'The configuration in the link is invalid; using the defaults.',
+  '当前配置未通过校验，请检查空标签或数值范围。': 'The current configuration is invalid. Check for an empty label or out-of-range value.',
+  '分享链接已复制。': 'Share link copied.', '浏览器未允许写入剪贴板。': 'The browser did not allow clipboard access.',
+  '配置 JSON 已复制。': 'Configuration JSON copied.',
+  '已开始下载 JSON。按配置指南导入后，重新加载 WezTerm 配置。': 'JSON download started. Import it using the configuration guide, then reload WezTerm.',
+  '配置已导入。': 'Configuration imported.',
+  '导入失败：请选择完整的状态栏配置 JSON，或重新下载后再试。': 'Import failed. Choose a complete status line configuration JSON file or download it again.',
+  '配置、模拟数据与终端宽度已恢复默认值。': 'Configuration, sample data, and terminal width reset to defaults.',
+  '交互预览': 'Interactive preview', '配置并实时预览 WezTerm Codex Status Line。': 'Configure and preview WezTerm Codex Status Line in real time.', '调整显示后下载 JSON，再': 'Adjust the display, download JSON, then ', '。下方使用模拟会话数据。': '. The controls below use sample session data.', '列': 'columns',
+  '状态栏配置与预览': 'Status line configuration and preview',
+  '导入网页配置': 'Import web configuration', '分享链接': 'Share link', '复制 JSON': 'Copy JSON', '下载 JSON': 'Download JSON', '导入 JSON': 'Import JSON',
+  '恢复全部默认值': 'Reset all defaults', '恢复配置、模拟数据和终端宽度': 'Reset configuration, sample data, and terminal width',
+  '状态栏实时预览': 'Live status line preview', '终端模拟宽度': 'Simulated terminal width',
+  '显示与主题': 'Display and theme', '常用': 'Common', '模型显示': 'Model display', '仅名称': 'Name only', '图标＋名称': 'Icon + name', '仅图标': 'Icon only',
+  '按当前模型自动匹配，其他模型显示原名称。': 'Icons match the current model automatically; other models keep their original names.',
+  '底部行数': 'Status rows', '行': 'rows', '分隔符': 'Separator', '底部状态栏': 'Bottom status line', '纯文本回退': 'Plain-text fallback', 'Git 查询': 'Git lookup',
+  '背景': 'Background', '文字': 'Text', '弱化文字': 'Muted text',
+  '特殊状态与模拟数据': 'Activity and sample data', '实时': 'Live', '协作模式': 'Activity mode', 'Review 模式': 'Review mode', 'Goal 状态': 'Goal status', '无 Goal': 'No Goal', '特殊状态显示优先级': 'Activity display priority', '模拟模型': 'Sample model',
+  '费用与模型单价': 'Cost and model pricing', '百万 Token': 'million tokens', 'Token、会话与状态预览数据': 'Token, session, and state preview data', '预览数据': 'Sample data',
+  '任务已完成': 'Tasks completed', '任务总数': 'Total tasks', 'Token 数据': 'Token data',
+  '输入 Token（含缓存）': 'Input tokens (including cache)', '当前上下文 Token': 'Current context tokens',
+  'Goal 预览数据': 'Goal sample data', 'Token 预算': 'Token budget', '已用 Token': 'Tokens used', '已用时间（秒）': 'Time used (seconds)', '特殊状态文字': 'Activity labels',
+  '字段顺序与配色': 'Field order and colors', '字段': 'fields', '显示': 'Display', '序号': 'No.', '背景色': 'Background', '文字色': 'Text', '排序': 'Order', '隐藏': 'Hide', '显示字段': 'Show field', '隐藏字段': 'Hide field', '上移': 'Move up', '下移': 'Move down',
+  '项目图标固定在右侧版本号之前': 'Project icon is fixed before the version on the right', '日志、会话与进程检测': 'Logs, sessions, and process detection', '高级配置': 'Advanced',
+  '日志与底部窗格': 'Logs and bottom pane', '调试日志': 'Debug logging', '写入加载日志': 'Write load log', '保持 Codex 窗格焦点': 'Keep focus on Codex pane', '兼容右侧状态栏': 'Update right status compatibility', '读取 Codex 配置': 'Read Codex configuration', '标题桥接': 'Title bridge',
+  'Codex 数据目录': 'Codex data directory', '日志标记': 'Log marker', 'Codex 配置路径': 'Codex configuration path', 'Codex 配置缓存（秒）': 'Codex config cache (seconds)', '退出宽限（秒）': 'Exit grace (seconds)', 'Git 缓存（秒）': 'Git cache (seconds)', '应用名': 'Application name', 'Git 图标': 'Git icon', '目录图标': 'Directory icon',
+  '会话绑定': 'Session binding', '允许最新会话回退': 'Allow latest-session fallback', '恢复会话时临时匹配': 'Temporary match while resuming', '绑定模式': 'Binding mode', '会话映射目录': 'Session mapping directory',
+  '候选会话有效期（秒）': 'Candidate session age (seconds)', '允许的时钟偏差（秒）': 'Allowed clock skew (seconds)', '恢复会话扫描间隔（秒）': 'Resume scan interval (seconds)', '会话缓存（秒）': 'Session cache (seconds)', '完整扫描缓存（秒）': 'Full scan cache (seconds)', '尾部读取缓存（秒）': 'Tail-read cache (seconds)', '读取失败清理（秒）': 'Read-failure cleanup (seconds)', '首次读取字节数': 'Initial seek bytes', '状态读取字节数': 'Activity seek bytes', '状态最大读取字节数': 'Maximum activity seek bytes', '元数据最大行数': 'Maximum metadata lines', '尾部最大行数': 'Maximum tail lines',
+  '进程检测': 'Process detection', '进程树缓存（秒）': 'Process-tree cache (seconds)', '进程名 · process_match.names': 'Process names · process_match.names', '命令行标记 · process_match.argv_markers': 'Command-line markers · process_match.argv_markers', '终端进程名 · process_match.terminal_names': 'Terminal process names · process_match.terminal_names',
+};
+
+function localize(value: string, english: boolean): string {
+  return english ? englishText[value] ?? value : value;
+}
 
 function cloneConfig(): StatuslineConfig {
   return structuredClone(defaultConfigJson) as StatuslineConfig;
@@ -278,6 +342,9 @@ function StatusRail({
 }
 
 export default function PreviewPage(): ReactNode {
+  const {i18n} = useDocusaurusContext();
+  const english = i18n.currentLocale === 'en';
+  const t = (value: string) => localize(value, english);
   const [config, setConfig] = useState<StatuslineConfig>(cloneConfig);
   const [sample, setSample] = useState<PreviewState>(cloneSample);
   const [columns, setColumns] = useState(DEFAULT_COLUMNS);
@@ -290,7 +357,7 @@ export default function PreviewPage(): ReactNode {
     try {
       setConfig(decodeConfig(encoded));
     } catch {
-      setNotice('链接中的配置无效，已使用默认配置。');
+      setNotice(t('链接中的配置无效，已使用默认配置。'));
     }
   }, []);
 
@@ -362,35 +429,35 @@ export default function PreviewPage(): ReactNode {
 
   const copyShareLink = async () => {
     if (!isStatuslineConfig(config)) {
-      showToast('当前配置未通过校验，请检查空标签或数值范围。');
+      showToast(t('当前配置未通过校验，请检查空标签或数值范围。'));
       return;
     }
     const url = new URL(window.location.href);
     url.search = `?config=${encodeConfig(config)}`;
     try {
       await navigator.clipboard.writeText(url.toString());
-      showToast('分享链接已复制。');
+      showToast(t('分享链接已复制。'));
     } catch {
-      showToast('浏览器未允许写入剪贴板。');
+      showToast(t('浏览器未允许写入剪贴板。'));
     }
   };
 
   const copyConfig = async () => {
     if (!isStatuslineConfig(config)) {
-      showToast('当前配置未通过校验，请检查空标签或数值范围。');
+      showToast(t('当前配置未通过校验，请检查空标签或数值范围。'));
       return;
     }
     try {
       await navigator.clipboard.writeText(`${JSON.stringify(config, null, 2)}\n`);
-      showToast('配置 JSON 已复制。');
+      showToast(t('配置 JSON 已复制。'));
     } catch {
-      showToast('浏览器未允许写入剪贴板。');
+      showToast(t('浏览器未允许写入剪贴板。'));
     }
   };
 
   const downloadConfig = () => {
     if (!isStatuslineConfig(config)) {
-      showToast('当前配置未通过校验，请检查空标签或数值范围。');
+      showToast(t('当前配置未通过校验，请检查空标签或数值范围。'));
       return;
     }
     const blob = new Blob([`${JSON.stringify(config, null, 2)}\n`], {type: 'application/json'});
@@ -400,7 +467,7 @@ export default function PreviewPage(): ReactNode {
     anchor.download = 'codex_statusline_config.json';
     anchor.click();
     URL.revokeObjectURL(objectUrl);
-    showToast('已开始下载 JSON。按配置指南导入后，重新加载 WezTerm 配置。');
+    showToast(t('已开始下载 JSON。按配置指南导入后，重新加载 WezTerm 配置。'));
   };
 
   const importConfig = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -411,9 +478,9 @@ export default function PreviewPage(): ReactNode {
       const parsed = JSON.parse(await file.text());
       if (!isStatuslineConfig(parsed)) throw new Error();
       setConfig(hydrateConfig(parsed));
-      showToast('配置已导入。');
+      showToast(t('配置已导入。'));
     } catch {
-      showToast('导入失败：请选择完整的状态栏配置 JSON，或重新下载后再试。');
+      showToast(t('导入失败：请选择完整的状态栏配置 JSON，或重新下载后再试。'));
     }
   };
 
@@ -424,7 +491,7 @@ export default function PreviewPage(): ReactNode {
     const url = new URL(window.location.href);
     url.searchParams.delete('config');
     window.history.replaceState({}, '', url);
-    showToast('配置、模拟数据与终端宽度已恢复默认值。');
+    showToast(t('配置、模拟数据与终端宽度已恢复默认值。'));
   };
 
   const enabledCount = config.options.render.segment_order.length
@@ -438,40 +505,40 @@ export default function PreviewPage(): ReactNode {
         : 'DEFAULT';
 
   return (
-    <Layout title="交互预览" description="配置并实时预览 WezTerm Codex Status Line。">
+    <Layout title={t('交互预览')} description={t('配置并实时预览 WezTerm Codex Status Line。')}>
       <main className={styles.page}>
         <header className={styles.header}>
           <div className="container">
             <span className={styles.kicker}>INTERACTIVE PREVIEW</span>
             <div className={styles.headerRow}>
               <div>
-                <Heading as="h1">状态栏配置与预览</Heading>
-                <p>{enabledCount}/{segmentIds.length} 字段启用 · {columns} 列 · {config.options.bottom_pane.rows} 行</p>
-                <p>调整显示后下载 JSON，再<Link to="/docs/guides/configuration#导入网页配置">导入本机配置</Link>。下方使用模拟会话数据。</p>
+                <Heading as="h1">{t('状态栏配置与预览')}</Heading>
+                <p>{enabledCount}/{segmentIds.length} {t('字段')} · {columns} {t('列')} · {config.options.bottom_pane.rows} {t('行')}</p>
+                <p>{t('调整显示后下载 JSON，再')}<Link to={`/docs/guides/configuration#${english ? "import-web-configuration" : "导入网页配置"}`}>{t('导入网页配置')}</Link>{t('。下方使用模拟会话数据。')}</p>
               </div>
               <div className={styles.commands}>
                 <button type="button" className={styles.commandButton} onClick={copyShareLink}>
                   <Link2 size={16} aria-hidden="true" />
-                  <span>分享链接</span>
+                  <span>{t('分享链接')}</span>
                 </button>
                 <button type="button" className={styles.commandButton} onClick={copyConfig}>
                   <Clipboard size={16} aria-hidden="true" />
-                  <span>复制 JSON</span>
+                  <span>{t('复制 JSON')}</span>
                 </button>
                 <button type="button" className={styles.commandButton} onClick={downloadConfig}>
                   <Download size={16} aria-hidden="true" />
-                  <span>下载 JSON</span>
+                  <span>{t('下载 JSON')}</span>
                 </button>
                 <button type="button" className={styles.commandButton} onClick={() => importRef.current?.click()}>
                   <Upload size={16} aria-hidden="true" />
-                  <span>导入 JSON</span>
+                  <span>{t('导入 JSON')}</span>
                 </button>
                 <button
                   type="button"
                   className={styles.iconButton}
                   onClick={resetAll}
-                  aria-label="恢复全部默认值"
-                  title="恢复配置、模拟数据和终端宽度">
+                  aria-label={t('恢复全部默认值')}
+                  title={t('恢复配置、模拟数据和终端宽度')}>
                   <RotateCcw size={17} aria-hidden="true" />
                 </button>
                 <input ref={importRef} type="file" accept="application/json,.json" onChange={importConfig} hidden />
@@ -480,7 +547,7 @@ export default function PreviewPage(): ReactNode {
           </div>
         </header>
 
-        <section className={styles.previewBand} aria-label="状态栏实时预览">
+        <section className={styles.previewBand} aria-label={t('状态栏实时预览')}>
           <div className="container">
             <div className={styles.terminalWindow}>
               <div className={styles.terminalHeader}>
@@ -498,7 +565,7 @@ export default function PreviewPage(): ReactNode {
             <div className={styles.widthControl}>
               <label htmlFor="columns">
                 <Sliders size={16} aria-hidden="true" />
-                <span>终端模拟宽度</span>
+                <span>{t('终端模拟宽度')}</span>
               </label>
               <input
                 id="columns"
@@ -518,10 +585,10 @@ export default function PreviewPage(): ReactNode {
           <div className={`container ${styles.controls}`}>
             <div className={styles.primaryGrid}>
               <section className={styles.panel} aria-labelledby="display-heading">
-                <SectionTitle icon={<Settings2 size={18} />} title="显示与主题" badge="常用" />
+                <SectionTitle icon={<Settings2 size={18} />} title={t('显示与主题')} badge={t('常用')} />
                 <div className={styles.formGrid}>
                   <label className={styles.field}>
-                    <span>状态标识 <code>label</code></span>
+                    <span>{t('状态标识')} <code>label</code></span>
                     <input
                       value={config.options.label}
                       maxLength={24}
@@ -529,7 +596,7 @@ export default function PreviewPage(): ReactNode {
                     />
                   </label>
                   <label className={styles.field}>
-                    <span>项目图标 <code>icon.text</code></span>
+                    <span>{t('项目图标')} <code>icon.text</code></span>
                     <input
                       value={config.options.icon?.text ?? ''}
                       maxLength={8}
@@ -537,23 +604,23 @@ export default function PreviewPage(): ReactNode {
                     />
                   </label>
                   <label className={`${styles.field} ${styles.modelDisplayField}`}>
-                    <span>模型显示</span>
+                    <span>{t('模型显示')}</span>
                     <select
                       value={config.options.render.model_display ?? 'name'}
                       onChange={(event) => updateOptions((next) => {
                         next.options.render.model_display = event.target.value as ModelDisplay;
                       })}>
-                      <option value="name">仅名称</option>
-                      <option value="icon_name">图标＋名称</option>
-                      <option value="icon">仅图标</option>
+                      <option value="name">{t('仅名称')}</option>
+                      <option value="icon_name">{t('图标＋名称')}</option>
+                      <option value="icon">{t('仅图标')}</option>
                     </select>
                     <small className={styles.fieldHint}>
                       {modelPresets.map(({family, label}) => `${modelIcons[family]} ${label}`).join('　')}
-                      <br />按当前模型自动匹配，其他模型显示原名称。
+                      <br />{t('按当前模型自动匹配，其他模型显示原名称。')}
                     </small>
                   </label>
                   <div className={styles.field}>
-                    <span>底部行数 <code>bottom_pane.rows</code></span>
+                    <span>{t('底部行数')} <code>bottom_pane.rows</code></span>
                     <div className={styles.segmented}>
                       {[1, 2].map((rows) => (
                         <button
@@ -561,13 +628,13 @@ export default function PreviewPage(): ReactNode {
                           className={config.options.bottom_pane.rows === rows ? styles.selectedSegment : ''}
                           onClick={() => updateOptions((next) => { next.options.bottom_pane.rows = rows as 1 | 2; })}
                           key={rows}>
-                          {rows} 行
+                          {rows} {t('行')}
                         </button>
                       ))}
                     </div>
                   </div>
                   <label className={styles.field}>
-                    <span>分隔符 <code>theme.glyphs.sep</code></span>
+                    <span>{t('分隔符')} <code>theme.glyphs.sep</code></span>
                     <input
                       value={config.options.theme.glyphs?.sep ?? ''}
                       maxLength={8}
@@ -580,7 +647,7 @@ export default function PreviewPage(): ReactNode {
 
                 <div className={styles.toggleGrid}>
                   <ToggleField
-                    label="底部状态栏"
+                    label={t('底部状态栏')}
                     configKey="bottom_pane.enabled"
                     checked={config.options.bottom_pane.enabled ?? true}
                     onChange={(checked) => updateOptions((next) => { next.options.bottom_pane.enabled = checked; })}
@@ -592,13 +659,13 @@ export default function PreviewPage(): ReactNode {
                     onChange={(checked) => updateOptions((next) => { next.options.render.powerline = checked; })}
                   />
                   <ToggleField
-                    label="纯文本回退"
+                    label={t('纯文本回退')}
                     configKey="render.plain_fallback"
                     checked={config.options.render.plain_fallback}
                     onChange={(checked) => updateOptions((next) => { next.options.render.plain_fallback = checked; })}
                   />
                   <ToggleField
-                    label="Git 查询"
+                    label={t('Git 查询')}
                     configKey="git.enabled"
                     checked={config.options.git.enabled}
                     onChange={(checked) => updateOptions((next) => { next.options.git.enabled = checked; })}
@@ -608,7 +675,7 @@ export default function PreviewPage(): ReactNode {
                 <div className={styles.colorGrid}>
                   {(['bg', 'fg', 'dim'] as const).map((key) => (
                     <label className={styles.globalColor} key={key}>
-                      <span>{key === 'bg' ? '背景' : key === 'fg' ? '文字' : '弱化文字'}</span>
+                      <span>{t(key === 'bg' ? '背景' : key === 'fg' ? '文字' : '弱化文字')}</span>
                       <input
                         type="color"
                         value={config.options.theme[key]}
@@ -621,10 +688,10 @@ export default function PreviewPage(): ReactNode {
               </section>
 
               <section className={styles.panel} aria-labelledby="state-heading">
-                <SectionTitle icon={<Activity size={18} />} title="特殊状态与模拟数据" badge="实时" />
+                <SectionTitle icon={<Activity size={18} />} title={t('特殊状态与模拟数据')} badge={t('实时')} />
                 <div className={styles.statusControls}>
                   <div className={styles.field}>
-                    <span>协作模式 <code>activity.mode</code></span>
+                    <span>{t('协作模式')} <code>activity.mode</code></span>
                     <div className={styles.segmented}>
                       {(['default', 'plan'] as const).map((mode) => (
                         <button
@@ -639,7 +706,7 @@ export default function PreviewPage(): ReactNode {
                   </div>
                   <label className={styles.toggleField}>
                     <span>
-                      <strong>Review 模式</strong>
+                      <strong>{t('Review 模式')}</strong>
                       <code>activity.review</code>
                     </span>
                     <input
@@ -650,7 +717,7 @@ export default function PreviewPage(): ReactNode {
                     />
                   </label>
                   <label className={styles.field}>
-                    <span>Goal 状态 <code>activity.goal.status</code></span>
+                    <span>{t('Goal 状态')} <code>activity.goal.status</code></span>
                     <select
                       value={sample.activity?.goal?.status ?? ''}
                       onChange={(event) => updateActivity((activity) => {
@@ -658,12 +725,12 @@ export default function PreviewPage(): ReactNode {
                         if (status) activity.goal = {...activity.goal, status};
                         else delete activity.goal;
                       })}>
-                      <option value="">无 Goal</option>
-                      {goalOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}
+                      <option value="">{t('无 Goal')}</option>
+                      {goalOptions.map((option) => <option value={option.value} key={option.value}>{t(option.label)}</option>)}
                     </select>
                   </label>
                 </div>
-                <div className={styles.priorityStrip} aria-label="特殊状态显示优先级">
+                <div className={styles.priorityStrip} aria-label={t('特殊状态显示优先级')}>
                   <span className={sample.activity?.review ? styles.priorityActive : ''}>REVIEW</span>
                   <b>›</b>
                   <span className={!sample.activity?.review && sample.activity?.mode === 'plan' ? styles.priorityActive : ''}>PLAN</span>
@@ -674,10 +741,10 @@ export default function PreviewPage(): ReactNode {
                 <div className={styles.formGrid}>
                   <div className={styles.field}>
                     <label className={styles.field}>
-                      <span>模型 <code>model</code></span>
+                      <span>{t('模型')} <code>model</code></span>
                       <input value={sample.model ?? ''} onChange={(event) => updateSample('model', event.target.value)} />
                     </label>
-                    <div className={styles.modelPresets} role="group" aria-label="模拟模型">
+                    <div className={styles.modelPresets} role="group" aria-label={t('模拟模型')}>
                       {modelPresets.map(({family, label, model}) => (
                         <button
                           type="button"
@@ -691,7 +758,7 @@ export default function PreviewPage(): ReactNode {
                   </div>
                   {(['reasoning', 'provider', 'personality', 'service_tier', 'cwd', 'project', 'git'] as const).map((key) => (
                     <label className={styles.field} key={key}>
-                      <span>{segmentMeta[key].label} <code>{key}</code></span>
+                      <span>{t(segmentMeta[key].label)} <code>{key}</code></span>
                       <input value={String(sample[key] ?? '')} onChange={(event) => updateSample(key, event.target.value)} />
                     </label>
                   ))}
@@ -701,8 +768,8 @@ export default function PreviewPage(): ReactNode {
 
             <details className={styles.panel}>
               <summary className={styles.detailsSummary}>
-                <span><Settings2 size={18} aria-hidden="true" />费用与模型单价</span>
-                <small>USD / 百万 Token</small>
+                <span><Settings2 size={18} aria-hidden="true" />{t('费用与模型单价')}</span>
+                <small>USD / {t('百万 Token')}</small>
               </summary>
               <div className={styles.detailsBody}>
                 <ModelPricing pricing={config.options.pricing} onChange={(pricing) => updateOptions((next) => {
@@ -715,9 +782,9 @@ export default function PreviewPage(): ReactNode {
               <summary className={styles.detailsSummary}>
                 <span>
                   <Sliders size={18} aria-hidden="true" />
-                  Token、会话与状态预览数据
+                  {t('Token、会话与状态预览数据')}
                 </span>
-                <small>预览数据</small>
+                <small>{t('预览数据')}</small>
               </summary>
               <div className={styles.detailsBody}>
                 <div className={styles.formGridWide}>
@@ -728,12 +795,12 @@ export default function PreviewPage(): ReactNode {
                     ['codex_version', 'Codex 版本'],
                   ] as const).map(([key, label]) => (
                     <label className={styles.field} key={key}>
-                      <span>{label} <code>{key}</code></span>
+                      <span>{t(label)} <code>{key}</code></span>
                       <input value={String(sample[key] ?? '')} onChange={(event) => updateSample(key, event.target.value)} />
                     </label>
                   ))}
                   <label className={styles.field}>
-                    <span>任务已完成 <code>task_progress.completed</code></span>
+                    <span>{t('任务已完成')} <code>task_progress.completed</code></span>
                     <input
                       type="number"
                       min="0"
@@ -745,7 +812,7 @@ export default function PreviewPage(): ReactNode {
                     />
                   </label>
                   <label className={styles.field}>
-                    <span>任务总数 <code>task_progress.total</code></span>
+                    <span>{t('任务总数')} <code>task_progress.total</code></span>
                     <input
                       type="number"
                       min="1"
@@ -759,7 +826,7 @@ export default function PreviewPage(): ReactNode {
                 </div>
 
                 <div className={styles.subsection}>
-                  <Heading as="h3">Token 数据</Heading>
+                  <Heading as="h3">{t('Token 数据')}</Heading>
                   <div className={styles.formGridWide}>
                     {([
                       ['input_raw', '输入 Token（含缓存）'],
@@ -770,7 +837,7 @@ export default function PreviewPage(): ReactNode {
                       ['context_window', '上下文窗口'],
                     ] as const).map(([key, label]) => (
                       <label className={styles.field} key={key}>
-                        <span>{label} <code>usage.{key}</code></span>
+                        <span>{t(label)} <code>usage.{key}</code></span>
                         <input
                           type="number"
                           min="0"
@@ -781,7 +848,7 @@ export default function PreviewPage(): ReactNode {
                       </label>
                     ))}
                     <label className={styles.field}>
-                      <span>上下文剩余 <code>usage.context_remaining_percent</code></span>
+                      <span>{t('上下文剩余')} <code>usage.context_remaining_percent</code></span>
                       <div className={styles.rangeField}>
                         <input
                           type="range"
@@ -798,7 +865,7 @@ export default function PreviewPage(): ReactNode {
 
                 {sample.activity?.goal ? (
                   <div className={styles.subsection}>
-                    <Heading as="h3">Goal 预览数据</Heading>
+                    <Heading as="h3">{t('Goal 预览数据')}</Heading>
                     <div className={styles.formGridWide}>
                       {([
                         ['token_budget', 'Token 预算'],
@@ -806,7 +873,7 @@ export default function PreviewPage(): ReactNode {
                         ['time_used_seconds', '已用时间（秒）'],
                       ] as const).map(([key, label]) => (
                         <label className={styles.field} key={key}>
-                          <span>{label} <code>activity.goal.{key}</code></span>
+                          <span>{t(label)} <code>activity.goal.{key}</code></span>
                           <input
                             type="number"
                             min="0"
@@ -822,11 +889,11 @@ export default function PreviewPage(): ReactNode {
                 ) : null}
 
                 <div className={styles.subsection}>
-                  <Heading as="h3">特殊状态文字</Heading>
+                  <Heading as="h3">{t('特殊状态文字')}</Heading>
                   <div className={styles.formGridWide}>
                     {activityLabelFields.map(([key, label]) => (
                       <label className={styles.field} key={key}>
-                        <span>{label} <code>activity.labels.{key}</code></span>
+                        <span>{t(label)} <code>activity.labels.{key}</code></span>
                         <input
                           value={config.options.activity?.labels[key] ?? ''}
                           maxLength={32}
@@ -842,15 +909,15 @@ export default function PreviewPage(): ReactNode {
             </details>
 
             <section className={`${styles.panel} ${styles.segmentPanel}`} aria-labelledby="segments-heading">
-              <SectionTitle icon={<Palette size={18} />} title="字段顺序与配色" badge={`${segmentIds.length} 字段`} />
+              <SectionTitle icon={<Palette size={18} />} title={t('字段顺序与配色')} badge={`${segmentIds.length} ${t('字段')}`} />
               <div className={styles.segmentTable}>
                 <div className={styles.tableHeader}>
-                  <span>显示</span>
-                  <span>序号</span>
-                  <span>字段</span>
-                  <span>背景色</span>
-                  <span>文字色</span>
-                  <span>排序</span>
+                  <span>{t('显示')}</span>
+                  <span>{t('序号')}</span>
+                  <span>{t('字段')}</span>
+                  <span>{t('背景色')}</span>
+                  <span>{t('文字色')}</span>
+                  <span>{t('排序')}</span>
                 </div>
                 {config.options.render.segment_order.map((id, index) => {
                   const enabled = !config.options.render.disabled_segments.includes(id);
@@ -861,17 +928,17 @@ export default function PreviewPage(): ReactNode {
                         type="button"
                         className={`${styles.enableButton} ${enabled ? styles.enabled : ''}`}
                         onClick={() => toggleSegment(id)}
-                        aria-label={`${enabled ? '隐藏' : '显示'}${segmentMeta[id].label}`}
-                        title={enabled ? '隐藏字段' : '显示字段'}>
+                        aria-label={`${t(enabled ? '隐藏' : '显示')}${t(segmentMeta[id].label)}`}
+                        title={t(enabled ? '隐藏字段' : '显示字段')}>
                         {enabled ? <Check size={15} aria-hidden="true" /> : null}
                       </button>
                       <span className={styles.order}>{String(index + 1).padStart(2, '0')}</span>
                       <div className={styles.segmentName}>
-                        <strong>{segmentMeta[id].label}</strong>
-                        <span>{segmentMeta[id].description}</span>
+                        <strong>{t(segmentMeta[id].label)}</strong>
+                        <span>{t(segmentMeta[id].description)}</span>
                         <code>{id}</code>
                       </div>
-                      <label className={styles.colorInput} title={`${segmentMeta[id].label}背景色`}>
+                      <label className={styles.colorInput} title={`${t(segmentMeta[id].label)} ${t('背景色')}`}>
                         <input
                           type="color"
                           value={theme.bg}
@@ -882,7 +949,7 @@ export default function PreviewPage(): ReactNode {
                         />
                         <code>{theme.bg}</code>
                       </label>
-                      <label className={styles.colorInput} title={`${segmentMeta[id].label}文字色`}>
+                      <label className={styles.colorInput} title={`${t(segmentMeta[id].label)} ${t('文字色')}`}>
                         <input
                           type="color"
                           value={theme.fg}
@@ -898,16 +965,16 @@ export default function PreviewPage(): ReactNode {
                           type="button"
                           onClick={() => moveSegment(id, -1)}
                           disabled={id === 'icon' || index === 0}
-                          aria-label={`上移${segmentMeta[id].label}`}
-                          title={id === 'icon' ? '项目图标固定在右侧版本号之前' : '上移'}>
+                          aria-label={`${t('上移')} ${t(segmentMeta[id].label)}`}
+                          title={t(id === 'icon' ? '项目图标固定在右侧版本号之前' : '上移')}>
                           <ArrowUp size={15} aria-hidden="true" />
                         </button>
                         <button
                           type="button"
                           onClick={() => moveSegment(id, 1)}
                           disabled={id === 'icon' || index >= config.options.render.segment_order.length - 2}
-                          aria-label={`下移${segmentMeta[id].label}`}
-                          title={id === 'icon' ? '项目图标固定在右侧版本号之前' : '下移'}>
+                          aria-label={`${t('下移')} ${t(segmentMeta[id].label)}`}
+                          title={t(id === 'icon' ? '项目图标固定在右侧版本号之前' : '下移')}>
                           <ArrowDown size={15} aria-hidden="true" />
                         </button>
                       </div>
@@ -921,49 +988,49 @@ export default function PreviewPage(): ReactNode {
               <summary className={styles.detailsSummary}>
                 <span>
                   <Settings2 size={18} aria-hidden="true" />
-                  日志、会话与进程检测
+                  {t('日志、会话与进程检测')}
                 </span>
-                <small>高级配置</small>
+                <small>{t('高级配置')}</small>
               </summary>
               <div className={styles.detailsBody}>
                 <div className={styles.advancedGroup}>
-                  <Heading as="h3">日志与底部窗格</Heading>
+                  <Heading as="h3">{t('日志与底部窗格')}</Heading>
                   <div className={styles.toggleGrid}>
-                    <ToggleField label="调试日志" configKey="debug" checked={config.options.debug ?? false} onChange={(checked) => updateOptions((next) => { next.options.debug = checked; })} />
-                    <ToggleField label="写入加载日志" configKey="log.enabled" checked={config.options.log?.enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.log!.enabled = checked; })} />
-                    <ToggleField label="保持 Codex 窗格焦点" configKey="bottom_pane.prevent_focus" checked={config.options.bottom_pane.prevent_focus} onChange={(checked) => updateOptions((next) => { next.options.bottom_pane.prevent_focus = checked; })} />
-                    <ToggleField label="兼容右侧状态栏" configKey="compat.update_right_status" checked={config.options.compat?.update_right_status ?? false} onChange={(checked) => updateOptions((next) => { next.options.compat!.update_right_status = checked; })} />
-                    <ToggleField label="读取 Codex 配置" configKey="codex_config.enabled" checked={config.options.codex_config?.enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.codex_config!.enabled = checked; })} />
-                    <ToggleField label="标题桥接" configKey="title_bridge.enabled" checked={config.options.title_bridge.enabled} onChange={(checked) => updateOptions((next) => { next.options.title_bridge.enabled = checked; })} />
+                    <ToggleField label={t('调试日志')} configKey="debug" checked={config.options.debug ?? false} onChange={(checked) => updateOptions((next) => { next.options.debug = checked; })} />
+                    <ToggleField label={t('写入加载日志')} configKey="log.enabled" checked={config.options.log?.enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.log!.enabled = checked; })} />
+                    <ToggleField label={t('保持 Codex 窗格焦点')} configKey="bottom_pane.prevent_focus" checked={config.options.bottom_pane.prevent_focus} onChange={(checked) => updateOptions((next) => { next.options.bottom_pane.prevent_focus = checked; })} />
+                    <ToggleField label={t('兼容右侧状态栏')} configKey="compat.update_right_status" checked={config.options.compat?.update_right_status ?? false} onChange={(checked) => updateOptions((next) => { next.options.compat!.update_right_status = checked; })} />
+                    <ToggleField label={t('读取 Codex 配置')} configKey="codex_config.enabled" checked={config.options.codex_config?.enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.codex_config!.enabled = checked; })} />
+                    <ToggleField label={t('标题桥接')} configKey="title_bridge.enabled" checked={config.options.title_bridge.enabled} onChange={(checked) => updateOptions((next) => { next.options.title_bridge.enabled = checked; })} />
                   </div>
                   <div className={styles.formGridWide}>
-                    <label className={styles.field}><span>Codex 数据目录 <code>codex_home</code></span><input value={config.options.codex_home ?? ''} onChange={(event) => updateOptions((next) => { next.options.codex_home = event.target.value; })} /></label>
-                    <label className={styles.field}><span>日志标记 <code>log.marker</code></span><input value={config.options.log?.marker ?? ''} onChange={(event) => updateOptions((next) => { next.options.log!.marker = event.target.value; })} /></label>
-                    <label className={styles.field}><span>Codex 配置路径 <code>codex_config.path</code></span><input value={config.options.codex_config?.path ?? ''} onChange={(event) => updateOptions((next) => { next.options.codex_config!.path = event.target.value; })} /></label>
-                    <label className={styles.field}><span>Codex 配置缓存（秒） <code>codex_config.cache_ttl_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.codex_config?.cache_ttl_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.codex_config!.cache_ttl_seconds = Number(event.target.value); })} /></label>
-                    <label className={styles.field}><span>退出宽限（秒） <code>bottom_pane.close_grace_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.bottom_pane.close_grace_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.bottom_pane.close_grace_seconds = Number(event.target.value); })} /></label>
-                    <label className={styles.field}><span>Git 缓存（秒） <code>git.cache_ttl_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.git.cache_ttl_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.git.cache_ttl_seconds = Number(event.target.value); })} /></label>
-                    <label className={styles.field}><span>应用名 <code>title_bridge.app_name</code></span><input value={config.options.title_bridge.app_name ?? ''} onChange={(event) => updateOptions((next) => { next.options.title_bridge.app_name = event.target.value; })} /></label>
-                    <label className={styles.field}><span>Git 图标 <code>theme.glyphs.branch</code></span><input value={config.options.theme.glyphs?.branch ?? ''} maxLength={8} onChange={(event) => updateOptions((next) => { next.options.theme.glyphs = {...next.options.theme.glyphs!, branch: event.target.value}; })} /></label>
-                    <label className={styles.field}><span>目录图标 <code>theme.glyphs.folder</code></span><input value={config.options.theme.glyphs?.folder ?? ''} maxLength={8} onChange={(event) => updateOptions((next) => { next.options.theme.glyphs = {...next.options.theme.glyphs!, folder: event.target.value}; })} /></label>
+                    <label className={styles.field}><span>{t('Codex 数据目录')} <code>codex_home</code></span><input value={config.options.codex_home ?? ''} onChange={(event) => updateOptions((next) => { next.options.codex_home = event.target.value; })} /></label>
+                    <label className={styles.field}><span>{t('日志标记')} <code>log.marker</code></span><input value={config.options.log?.marker ?? ''} onChange={(event) => updateOptions((next) => { next.options.log!.marker = event.target.value; })} /></label>
+                    <label className={styles.field}><span>{t('Codex 配置路径')} <code>codex_config.path</code></span><input value={config.options.codex_config?.path ?? ''} onChange={(event) => updateOptions((next) => { next.options.codex_config!.path = event.target.value; })} /></label>
+                    <label className={styles.field}><span>{t('Codex 配置缓存（秒）')} <code>codex_config.cache_ttl_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.codex_config?.cache_ttl_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.codex_config!.cache_ttl_seconds = Number(event.target.value); })} /></label>
+                    <label className={styles.field}><span>{t('退出宽限（秒）')} <code>bottom_pane.close_grace_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.bottom_pane.close_grace_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.bottom_pane.close_grace_seconds = Number(event.target.value); })} /></label>
+                    <label className={styles.field}><span>{t('Git 缓存（秒）')} <code>git.cache_ttl_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.git.cache_ttl_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.git.cache_ttl_seconds = Number(event.target.value); })} /></label>
+                    <label className={styles.field}><span>{t('应用名')} <code>title_bridge.app_name</code></span><input value={config.options.title_bridge.app_name ?? ''} onChange={(event) => updateOptions((next) => { next.options.title_bridge.app_name = event.target.value; })} /></label>
+                    <label className={styles.field}><span>{t('Git 图标')} <code>theme.glyphs.branch</code></span><input value={config.options.theme.glyphs?.branch ?? ''} maxLength={8} onChange={(event) => updateOptions((next) => { next.options.theme.glyphs = {...next.options.theme.glyphs!, branch: event.target.value}; })} /></label>
+                    <label className={styles.field}><span>{t('目录图标')} <code>theme.glyphs.folder</code></span><input value={config.options.theme.glyphs?.folder ?? ''} maxLength={8} onChange={(event) => updateOptions((next) => { next.options.theme.glyphs = {...next.options.theme.glyphs!, folder: event.target.value}; })} /></label>
                   </div>
                 </div>
 
                 <div className={styles.advancedGroup}>
-                  <Heading as="h3">会话绑定</Heading>
+                  <Heading as="h3">{t('会话绑定')}</Heading>
                   <div className={styles.toggleGrid}>
-                    <ToggleField label="会话绑定" configKey="sessions.enabled" checked={config.options.sessions.enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.sessions.enabled = checked; })} />
-                    <ToggleField label="允许最新会话回退" configKey="sessions.allow_fallback_latest" checked={config.options.sessions.allow_fallback_latest} onChange={(checked) => updateOptions((next) => { next.options.sessions.allow_fallback_latest = checked; })} />
-                    <ToggleField label="恢复会话时临时匹配" configKey="sessions.resume_fallback_enabled" checked={config.options.sessions.resume_fallback_enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.sessions.resume_fallback_enabled = checked; })} />
+                    <ToggleField label={t('会话绑定')} configKey="sessions.enabled" checked={config.options.sessions.enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.sessions.enabled = checked; })} />
+                    <ToggleField label={t('允许最新会话回退')} configKey="sessions.allow_fallback_latest" checked={config.options.sessions.allow_fallback_latest} onChange={(checked) => updateOptions((next) => { next.options.sessions.allow_fallback_latest = checked; })} />
+                    <ToggleField label={t('恢复会话时临时匹配')} configKey="sessions.resume_fallback_enabled" checked={config.options.sessions.resume_fallback_enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.sessions.resume_fallback_enabled = checked; })} />
                   </div>
                   <div className={styles.formGridWide}>
                     <label className={styles.field}>
-                      <span>绑定模式 <code>sessions.binding_mode</code></span>
+                      <span>{t('绑定模式')} <code>sessions.binding_mode</code></span>
                       <select value={config.options.sessions.binding_mode} onChange={(event) => updateOptions((next) => { next.options.sessions.binding_mode = event.target.value as 'auto' | 'hook' | 'heuristic'; })}>
                         <option value="auto">auto</option><option value="hook">hook</option><option value="heuristic">heuristic</option>
                       </select>
                     </label>
-                    <label className={styles.field}><span>会话映射目录 <code>sessions.bridge_dir</code></span><input value={config.options.sessions.bridge_dir ?? ''} onChange={(event) => updateOptions((next) => { next.options.sessions.bridge_dir = event.target.value; })} /></label>
+                    <label className={styles.field}><span>{t('会话映射目录')} <code>sessions.bridge_dir</code></span><input value={config.options.sessions.bridge_dir ?? ''} onChange={(event) => updateOptions((next) => { next.options.sessions.bridge_dir = event.target.value; })} /></label>
                     {([
                       ['resume_fallback_max_age_seconds', '候选会话有效期（秒）', 1],
                       ['resume_fallback_clock_skew_seconds', '允许的时钟偏差（秒）', 0],
@@ -987,18 +1054,18 @@ export default function PreviewPage(): ReactNode {
                 </div>
 
                 <div className={styles.advancedGroup}>
-                  <Heading as="h3">进程检测</Heading>
+                  <Heading as="h3">{t('进程检测')}</Heading>
                   <div className={styles.toggleGrid}>
-                    <ToggleField label="进程检测" configKey="process_match.enabled" checked={config.options.process_match?.enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.process_match!.enabled = checked; })} />
+                    <ToggleField label={t('进程检测')} configKey="process_match.enabled" checked={config.options.process_match?.enabled ?? true} onChange={(checked) => updateOptions((next) => { next.options.process_match!.enabled = checked; })} />
                   </div>
                   <div className={styles.formGridWide}>
-                    <label className={styles.field}><span>退出宽限（秒） <code>process_match.grace_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.process_match?.grace_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.process_match!.grace_seconds = Number(event.target.value); })} /></label>
-                    <label className={styles.field}><span>进程树缓存（秒） <code>process_match.tree_cache_ttl_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.process_match?.tree_cache_ttl_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.process_match!.tree_cache_ttl_seconds = Number(event.target.value); })} /></label>
+                    <label className={styles.field}><span>{t('退出宽限（秒）')} <code>process_match.grace_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.process_match?.grace_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.process_match!.grace_seconds = Number(event.target.value); })} /></label>
+                    <label className={styles.field}><span>{t('进程树缓存（秒）')} <code>process_match.tree_cache_ttl_seconds</code></span><input type="number" min="0" step="0.1" value={config.options.process_match?.tree_cache_ttl_seconds ?? 0} onChange={(event) => updateOptions((next) => { next.options.process_match!.tree_cache_ttl_seconds = Number(event.target.value); })} /></label>
                   </div>
                   <div className={styles.listGrid}>
-                    <StringListEditor label="进程名 · process_match.names" value={config.options.process_match?.names ?? []} onChange={(value) => updateOptions((next) => { next.options.process_match!.names = value; })} />
-                    <StringListEditor label="命令行标记 · process_match.argv_markers" value={config.options.process_match?.argv_markers ?? []} onChange={(value) => updateOptions((next) => { next.options.process_match!.argv_markers = value; })} />
-                    <StringListEditor label="终端进程名 · process_match.terminal_names" value={config.options.process_match?.terminal_names ?? []} onChange={(value) => updateOptions((next) => { next.options.process_match!.terminal_names = value; })} />
+                    <StringListEditor label={t('进程名 · process_match.names')} value={config.options.process_match?.names ?? []} onChange={(value) => updateOptions((next) => { next.options.process_match!.names = value; })} />
+                    <StringListEditor label={t('命令行标记 · process_match.argv_markers')} value={config.options.process_match?.argv_markers ?? []} onChange={(value) => updateOptions((next) => { next.options.process_match!.argv_markers = value; })} />
+                    <StringListEditor label={t('终端进程名 · process_match.terminal_names')} value={config.options.process_match?.terminal_names ?? []} onChange={(value) => updateOptions((next) => { next.options.process_match!.terminal_names = value; })} />
                   </div>
                 </div>
 

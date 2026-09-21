@@ -17,7 +17,7 @@ import TabItem from '@theme/TabItem';
 <TabItem value="npx" label="npx">
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line doctor
+npx --yes wezterm-codex-status-line@0.1.2 doctor
 ```
 
 </TabItem>
@@ -33,7 +33,7 @@ uvx wezterm-codex-status-line doctor
 `OK` 表示检查通过，`MISSING` 表示检查未通过。后者也可能表示配置内容无效。添加全局选项 `--json` 可查看详细结果：
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line --json doctor
+npx --yes wezterm-codex-status-line@0.1.2 --json doctor
 ```
 
 自定义安装目录需要继续传入相同的 `--codex-home` 或 `--wezterm-module-dir`。
@@ -51,7 +51,7 @@ require("codex_statusline").setup()
 如果缺少 `codex_statusline_core` 或其他子模块，运行完整更新：
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line update
+npx --yes wezterm-codex-status-line@0.1.2 update
 ```
 
 完成后重新加载 WezTerm 配置，再运行 `doctor`。
@@ -108,7 +108,7 @@ npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/
 使用 `--dry-run` 检查文件：
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line configure --from ./codex_statusline_config.json --dry-run
+npx --yes wezterm-codex-status-line@0.1.2 configure --from ./codex_statusline_config.json --dry-run
 ```
 
 从网页导出完整配置后修改。常见错误包括缺少字段、未知键、颜色格式不为 `#RRGGBB`、字段重复或顺序列表为空。
@@ -118,7 +118,7 @@ npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/
 选择包含 Nerd Font 图标的 WezTerm 字体，或关闭 Powerline：
 
 ```sh
-npx --yes --package=https://github.com/un4gt/wezterm-codex-status-line/releases/download/v0.1.1/wezterm-codex-status-line-0.1.1.tgz wezterm-codex-status-line configure --no-powerline
+npx --yes wezterm-codex-status-line@0.1.2 configure --no-powerline
 ```
 
 项目图标仍显示异常时，将 `icon.text` 改为 `>_`。修改后重新加载 WezTerm 配置。

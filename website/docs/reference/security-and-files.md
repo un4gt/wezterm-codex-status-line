@@ -8,7 +8,7 @@ description: 查询配置文件位置、数据读取范围和卸载后的保留�
 
 状态栏使用本地 Codex 会话记录和 WezTerm 窗格信息。运行时不发送网络请求，也不收集遥测。
 
-`npx` 和 `uvx` 下载软件包时需要访问 GitHub Releases；uv 还可能下载 Python 和依赖。
+`npx` 从 npm 下载软件包，`uvx` 从 PyPI 下载软件包；uv 还可能下载 Python 和依赖。
 
 ## 文件位置
 
